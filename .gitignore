@@ -1,0 +1,12 @@
+*.swp
+.gdbinit
+build/
+entry_ap
+*vectors.S
+*output
+
+# JetBrains IDEs
+.idea/
+compile_commands.json
+compiler-file14833249966682718647.d
+compiler-file2272450348885029440.d
