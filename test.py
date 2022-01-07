@@ -2,32 +2,31 @@
 
 import argparse
 import os
-import subprocess
-import sys
 import os
 import time
+import json
 from select import select
-from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
+from subprocess import Popen, TimeoutExpired
 
 # The number of seconds it takes to run the test suite
 TIMEOUT = {
-    2: 60,
+    1: 60,
     3: 60,
     4: 60,
 }
 
 test_weights = {
-    "2-close-test": 18,
-    "2-dup-console": 2,
-    "2-dup-read": 2,
-    "2-fd-limit": 3,
-    "2-fstat-test": 2,
-    "2-open-bad-args": 12,
-    "2-open-twice": 12,
-    "2-read-bad-args": 12,
-    "2-read-small": 18,
-    "2-readdir-test": 2,
-    "2-write-bad-args": 2,
+    "1-close-test": 10,
+    "1-dup-console": 7,
+    "1-dup-read": 7,
+    "1-fd-limit": 5,
+    "1-fstat-test": 7,
+    "1-open-bad-args": 10,
+    "1-open-twice": 10,
+    "1-read-bad-args": 10,
+    "1-read-small": 10,
+    "1-readdir-test": 7,
+    "1-write-bad-args": 7,
     "3-fork-fd": 25,
     "3-fork-test": 25,
     "3-fork-tree": 25,
@@ -45,6 +44,8 @@ test_weights = {
     "4-sbrk-small": 15
 }
 
+autograder_root = "/autograder"
+
 # ANSI color
 ANSI_RED = '\033[31m'
 ANSI_GREEN = '\033[32m'
@@ -54,6 +55,14 @@ ANSI_RESET = '\033[0m'
 PASSED = 1
 FAILED = 0
 
+
+def make_test_result(score: float, max_score: float, name: str, output: str) -> dict:
+    return {
+        "score": score,
+        "max_score": max_score,
+        "name": name,
+        "output": output
+    }
 
 def check_output(out, test, ofs):
     error = False
@@ -68,16 +77,21 @@ def check_output(out, test, ofs):
     return test_passed and not error
 
 
-def test_summary(test_stats, lab):
+def test_summary(test_stats, lab, outputs):
     score = 0
-    if lab == 2 or lab == 3 or lab == 4:
+    if lab == 1 or lab == 3 or lab == 4:
+        results = {"tests": []}
         for test, result in test_stats.items():
-            if result == PASSED:
-                if "{}-{}".format(lab, test) in test_weights:
-                    score += test_weights["{}-{}".format(lab, test)]
+            if f"{lab}-{test}" in test_weights:
+                w = test_weights[f"{lab}-{test}"]
+                results["tests"].append(make_test_result(w if result == PASSED else 0, w, test, outputs[test]))
+                if result == PASSED:
+                    score += w
+        with open(f"{autograder_root}/results/results.json", 'w') as fp:
+            json.dump(result, fp)
     else:
-        print("lab{} tests not available".format(lab))
-    print("lab{0}test score: {1}/100".format(lab, score))
+        print(f"lab{lab} tests not available")
+    print(f"lab{lab} test score: {score}/90")
 
 
 def main():
@@ -88,6 +102,7 @@ def main():
     test_stats = {}
     lab = args.lab_number
     out = open("lab"+str(lab)+"output", "w+")
+    test_stdout = {}
 
     # retrieve list of tests for the lab
     testdir = os.path.join(os.getcwd(), "user/lab"+str(lab))
@@ -119,18 +134,21 @@ def main():
             pout = open("/tmp/osv-test.out")
             print("booting osv")
             select([pout], [], [])
-            time.sleep(0.5) # select seems to return slightly before osv has finished booting
-            print("sending {}\nquit\n".format(test))
-            pin.write("{}\nquit\n".format(test))
+            # select seems to return slightly before osv has finished booting
+            time.sleep(0.5)
+            print(f"sending {test}\nquit\n")
+            pin.write(f"{test}\nquit\n")
             pin.flush()
             try:
                 print("waiting for osv")
                 qemu.wait(timeout=TIMEOUT[lab])
                 print("reading output")
-                out.write(pout.read())
+                output = pout.read()
+                out.write(output)
+                test_stdout[test] = output
             except TimeoutExpired as e:
                 print("Exceeded Timeout " + str(TIMEOUT[lab]) + " seconds")
-                print("possibly due to kernel panic, check lab{}output".format(lab))
+                print(f"possibly due to kernel panic, check contents of lab{lab}output file")
                 qemu.terminate()
                 pass
             finally:
@@ -151,7 +169,7 @@ def main():
             pass
 
     # examine test stats
-    test_summary(test_stats, lab)
+    test_summary(test_stats, lab, test_stdout)
     out.close()
 
 

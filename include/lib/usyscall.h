@@ -3,6 +3,7 @@
 
 #include <arch/types.h>
 #include <lib/errcode.h>
+#include <kernel/types.h>
 
 /*
  * Duplicate kernel data structures and definitions
@@ -109,7 +110,7 @@ void sleep(unsigned int seconds);
  * ERR_FTYPE - A component used as a directory in pathname is not a directory.
  * ERR_NOMEM - Failed to allocate memory.
  */
-int open(const char *pathname, int flags, int mode); // XXX mode should be fmode_t
+int open(const char *pathname, int flags, fmode_t mode);
 /*
  * Close a file descriptor.
  *

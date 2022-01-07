@@ -51,7 +51,7 @@ static bool validate_str(char *s);
 /*
  * Validate buffer passed by user.
  */
-static bool validate_bufptr(void* buf, size_t size);
+static bool validate_ptr(void* ptr, size_t size);
 
 
 static sysret_t (*syscalls[])(void*) = {
@@ -98,17 +98,14 @@ validate_str(char *s)
 }
 
 static bool
-validate_bufptr(void* buf, size_t size)
+validate_ptr(void* ptr, size_t size)
 {
-    vaddr_t bufaddr = (vaddr_t) buf;
-    if (bufaddr + size < bufaddr) {
+    vaddr_t ptraddr = (vaddr_t) ptr;
+    if (ptraddr + size < ptraddr) {
         return False;
     }
-    // verify argument buffer is valid and within specified size
-    if(as_find_memregion(&proc_current()->as, bufaddr, size) == NULL) {
-        return False;
-    }
-    return True;
+    // verify argument ptr points to a valid chunk of memory of size bytes
+    return as_find_memregion(&proc_current()->as, ptraddr, size) != NULL;
 }
 
 
@@ -225,7 +222,7 @@ sys_read(void* arg)
     kassert(fetch_arg(arg, 3, &count));
     kassert(fetch_arg(arg, 2, &buf));
 
-    if (!validate_bufptr((void*)buf, (size_t)count)) {
+    if (!validate_ptr((void*)buf, (size_t)count)) {
         return ERR_FAULT;
     }
 
@@ -245,7 +242,7 @@ sys_write(void* arg)
     kassert(fetch_arg(arg, 3, &count));
     kassert(fetch_arg(arg, 2, &buf));
 
-    if (!validate_bufptr((void*)buf, (size_t)count)) {
+    if (!validate_ptr((void*)buf, (size_t)count)) {
         return ERR_FAULT;
     }
 
@@ -395,7 +392,7 @@ sys_info(void* arg)
 
     kassert(fetch_arg(arg, 1, &info));
 
-    if (!validate_bufptr((void*)info, sizeof(struct sys_info))) {
+    if (!validate_ptr((void*)info, sizeof(struct sys_info))) {
         return ERR_FAULT;
     }
     // fill in using user_pgfault 
