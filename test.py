@@ -77,7 +77,7 @@ def check_output(out, test, ofs):
     return test_passed and not error
 
 
-def test_summary(test_stats, lab, outputs):
+def test_summary(test_stats, lab, outputs, autograder):
     score = 0
     if lab == 1 or lab == 3 or lab == 4:
         results = {"tests": []}
@@ -87,8 +87,9 @@ def test_summary(test_stats, lab, outputs):
                 results["tests"].append(make_test_result(w if result == PASSED else 0, w, test, outputs[test]))
                 if result == PASSED:
                     score += w
-        with open(f"{autograder_root}/results/results.json", 'w') as fp:
-            json.dump(result, fp)
+        if autograder:
+            with open(f"{autograder_root}/results/results.json", 'w') as fp:
+                json.dump(result, fp)
     else:
         print(f"lab{lab} tests not available")
     print(f"lab{lab} test score: {score}/90")
@@ -97,6 +98,7 @@ def test_summary(test_stats, lab, outputs):
 def main():
     parser = argparse.ArgumentParser(description="Run osv tests")
     parser.add_argument('lab_number', type=int, help='lab number')
+    parser.add_argument('--autograder', help="produce autograder output for Gradescope")
     args = parser.parse_args()
 
     test_stats = {}
@@ -169,7 +171,7 @@ def main():
             pass
 
     # examine test stats
-    test_summary(test_stats, lab, test_stdout)
+    test_summary(test_stats, lab, test_stdout, args.autograder)
     out.close()
 
 
