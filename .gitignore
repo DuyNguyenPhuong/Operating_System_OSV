@@ -4,6 +4,7 @@ build/
 entry_ap
 *vectors.S
 *output
+osv-test.*
 
 # JetBrains IDEs
 .idea/

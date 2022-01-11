@@ -17,7 +17,7 @@ KERNEL_CLFAGS :=
 MKDIR_P := mkdir -p
 HOST_CC := gcc
 QEMUOPTS := -serial mon:stdio -m 512 -no-reboot -device isa-debug-exit  #-d int
-QEMUTESTOPTS := -serial pipe:/tmp/osv-test -monitor none -m 512 -no-reboot -device isa-debug-exit  #-d int
+QEMUTESTOPTS := -serial pipe:build/osv-test -monitor none -m 512 -no-reboot -device isa-debug-exit  #-d int
 GDBPORT := $(shell expr `id -u` % 5000 + 25000)
 QEMUGDB := -gdb tcp::$(GDBPORT)
 

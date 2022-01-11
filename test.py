@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import os
 import time
 import json
 from select import select
@@ -110,13 +109,19 @@ def main():
     testdir = os.path.join(os.getcwd(), "user/lab"+str(lab))
     out.write("test dir: "+testdir+"\n")
     try:
-        os.mkfifo("/tmp/osv-test.in")
+        os.mkdir("build")
+    except FileExistsError:
+        pass
+    except Exception:
+        raise        
+    try:
+        os.mkfifo(f"build/osv-test.in")
     except FileExistsError:
         pass
     except Exception:
         raise
     try:
-        os.mkfifo("/tmp/osv-test.out")
+        os.mkfifo(f"build/osv-test.out")
     except FileExistsError:
         pass
     except Exception:
@@ -132,8 +137,8 @@ def main():
         try:
             ofs = out.tell()
             qemu = Popen(["make", "qemu-test", "--quiet"])
-            pin = open("/tmp/osv-test.in", "w")
-            pout = open("/tmp/osv-test.out")
+            pin = open(f"build/osv-test.in", "w")
+            pout = open(f"build/osv-test.out")
             print("booting osv")
             select([pout], [], [])
             # select seems to return slightly before osv has finished booting
