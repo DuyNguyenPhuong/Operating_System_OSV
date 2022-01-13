@@ -16,12 +16,12 @@ main()
         }
         if (pids[n] == 0) {
             exit(0);
-            error("wait-twice: exit failed to destroy this process");
+            error("wait-twice: exit failed to destroy child process");
         }
     }
 
     if (n != nproc) {
-        error("wait-twice: fork claimed to work %d times! but only %d", nproc, n);
+        error("wait-twice: in a loop calling fork %d times, it was called %d times instead", nproc, n);
     }
 
     // try waiting for each child twice

@@ -15,25 +15,25 @@ main()
         }
         if (pid == 0) {
             exit(getpid());
-            error("forktest: exit failed to destroy this process");
+            error("fork-test: exit failed to destroy process %d", getpid());
         }
     }
 
     if (n != nproc) {
-        error("forktest: fork claimed to work %d times! but only %d", nproc, n);
+        error("fork-test: in a loop calling fork %d times, it was called %d times instead", nproc, n);
     }
 
     // wait to reclaim all children, make sure their exit status has greater pid than parent
     mypid = getpid();
     for (; n > 0; n--) {
         if ((ret = wait(-1, &status)) < 0 || status < mypid) {
-            error("forktest: wait failed or got wrong status, return value was %d", ret);
+            error("fork-test: wait failed or got wrong status, return value was %d", ret);
         }
     }
 
     // try waiting for more children, should fail
     if ((ret = wait(-1, &status)) != ERR_CHILD) {
-        error("forktest: wait got too many, return value was %d", ret);
+        error("fork-test: calling wait after all children were already waited on did not return ERR_CHILD, return value was %d", ret);
     }
     pass("fork-test");
     exit(0);

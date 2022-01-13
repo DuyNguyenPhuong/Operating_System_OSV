@@ -17,31 +17,31 @@ main()
     if ((pid = fork()) == 0) {
         // child read 10 bytes
         if ((ret = read(fd, buf, 10)) != 10) {
-            error("tried to read 10 bytes from fd, read %d bytes", ret);
+            error("fork-fd: tried to read 10 bytes from fd, read %d bytes", ret);
         }
         if (strcmp("aaaaaaaaaa", buf) != 0) {
-            error("should have read 10 'a's, instead: '%s'", buf);
+            error("fork-fd: should have read 10 'a's, instead: '%s'", buf);
         }
         if ((ret = close(fd)) != ERR_OK) {
-            error("failed to close the fd inherited, return value was %d", ret);
+            error("fork-fd: failed to close the fd inherited, return value was %d", ret);
         }
         exit(0);
-        error("failed to exit");
+        error("fork-fd: failed to exit");
     } else {
         if ((ret = wait(pid, NULL)) != pid) {
-            error("failed to wait for child, return value was %d", ret);
+            error("fork-fd: failed to wait for child, return value was %d", ret);
         }
     }
 
     // parent reads the next 10 byte
    if ((ret = read(fd, buf, 10)) != 10) {
-        error("tried to read 10 bytes from fd, read %d bytes", ret);
+        error("fork-fd: tried to read 10 bytes from fd, read %d bytes", ret);
     }
     if (strcmp("bbbbbbbbbb", buf)) {
-        error("should have read 10 b's, instead: '%s'", buf);
+        error("fork-fd: should have read 10 b's, instead: '%s'", buf);
     }
     if ((ret = close(fd)) != ERR_OK) {
-        error("failed to close fd, return values was %d", ret);
+        error("fork-fd: failed to close fd, return values was %d", ret);
     }
 
     // Open 4 new file descriptors, close 2 in the middle, fork and make sure
@@ -64,7 +64,7 @@ main()
         exit(0);
     } else {
         if ((ret = wait(pid, NULL)) != pid) {
-            error("failed to wait for child, return value was %d", ret);
+            error("fork-fd: failed to wait for child, return value was %d", ret);
         }
         assert(close(fds[0]) == ERR_OK);
         assert(close(fds[3]) == ERR_OK);
