@@ -2,16 +2,18 @@
 
 import argparse
 import os
+import sys
 import time
 import json
+import subprocess
+import shutil
 from select import select
 from subprocess import Popen, TimeoutExpired
 
 # The number of seconds it takes to run the test suite
 TIMEOUT = {
     1: 60,
-    3: 60,
-    4: 60,
+    2: 60
 }
 
 test_weights = {
@@ -26,14 +28,16 @@ test_weights = {
     "1-read-small": 10,
     "1-readdir-test": 7,
     "1-write-bad-args": 7,
-    "3-fork-fd": 25,
-    "3-fork-test": 25,
-    "3-fork-tree": 25,
+    "2-fork-fd": 15,
+    "2-fork-test": 15,
+    "2-fork-tree": 15,
+    "2-race-test": 10,
+    "2-wait-twice": 5,
+    "2-wait-bad-args": 15,
+    "2-exit-test": 15,
+    "3-spawn-args": 0,
     "3-pipe-robust": 0,
     "3-pipe-test": 0,
-    "3-race-test": 10,
-    "3-spawn-args": 0,
-    "3-wait-twice": 15,
     "4-bad-mem-access": 10,
     "4-grow-stack": 25,
     "4-grow-stack-edgecase": 10,
@@ -44,6 +48,14 @@ test_weights = {
 }
 
 autograder_root = "/autograder"
+submission_files = [f"{autograder_root}/submission/arch",
+                    f"{autograder_root}/submission/include",
+                    f"{autograder_root}/submission/kernel"]
+proc_flags = {
+    "stdout": subprocess.PIPE,
+    "stderr": subprocess.STDOUT,
+    "universal_newlines": True
+}
 
 # ANSI color
 ANSI_RED = '\033[31m'
@@ -78,7 +90,7 @@ def check_output(out, test, ofs):
 
 def test_summary(test_stats, lab, outputs, autograder):
     score = 0
-    if lab == 1 or lab == 3 or lab == 4:
+    if lab == 1 or lab == 2:
         results = {"tests": []}
         for test, result in test_stats.items():
             if f"{lab}-{test}" in test_weights:
@@ -100,6 +112,42 @@ def main():
     parser.add_argument('--autograder', help="produce autograder output for Gradescope")
     args = parser.parse_args()
 
+    result = {}
+
+    if args.autograder:
+        # check for correct submission directories
+        if not all(os.path.exists(f) for f in submission_files):
+            result["score"] = 0
+            result["output"] = "\n".join(f"{f.split('/')[-1]} directory not found at {f} in submission" for f in submission_files
+                if not os.path.exists(f))
+            with open(f"{autograder_root}/results/results.json", 'w') as fp:
+                json.dump(result, fp)
+            sys.exit(1)
+
+        # setup
+        for f in submission_files:
+            subprocess.run(["cp", "-r", f, f.replace("submission", "source")])
+        os.chdir(f"{autograder_root}/source/")
+        subprocess.run(["chmod", "+x", "arch/x86_64/boot/sign.py"])
+        shutil.rmtree("build", ignore_errors=True)
+        result["tests"] = []
+
+        # build
+        try:
+            stdout = ""
+            make = subprocess.run(["make"], check=True, **proc_flags)
+            stdout += make.stdout
+            result["tests"].append(make_test_result(0, 0, "build", stdout))
+        except subprocess.CalledProcessError as err:
+            result["tests"].append(make_test_result(
+                0, 0, "build", stdout + err.stdout))
+            # add feedback that other tests were not run due to compilation error
+            result["tests"].append(make_test_result(
+                    0, 90, "correctness tests", "submission did not compile, tests not run"))
+            with open(f"{autograder_root}/results/results.json", 'w') as fp:
+                json.dump(result, fp)
+            sys.exit(2)
+
     test_stats = {}
     lab = args.lab_number
     out = open("lab"+str(lab)+"output", "w+")
@@ -113,7 +161,7 @@ def main():
     except FileExistsError:
         pass
     except Exception:
-        raise        
+        raise
     try:
         os.mkfifo(f"build/osv-test.in")
     except FileExistsError:
@@ -143,8 +191,12 @@ def main():
             select([pout], [], [])
             # select seems to return slightly before osv has finished booting
             time.sleep(0.5)
-            print(f"sending {test}\nquit\n")
-            pin.write(f"{test}\nquit\n")
+            print(f"sending {test}\n")
+            pin.write(f"{test}\n")
+            pin.flush()
+            time.sleep(0.2)
+            print(f"sending quit\n")
+            pin.write(f"quit\n")
             pin.flush()
             try:
                 print("waiting for osv")
@@ -154,8 +206,9 @@ def main():
                 out.write(output)
                 test_stdout[test] = output
             except TimeoutExpired as e:
-                print("Exceeded Timeout " + str(TIMEOUT[lab]) + " seconds")
-                print(f"possibly due to kernel panic, check contents of lab{lab}output file")
+                test_stdout[test] = f"Exceeded Timeout {TIMEOUT[lab]} seconds\n\
+                possibly due to kernel panic, check contents of lab{lab}output file"
+                print(test_stdout[test])
                 qemu.terminate()
                 pass
             finally:
@@ -171,9 +224,10 @@ def main():
                 print(ANSI_RED + "failed " + ANSI_RESET + test)
             print('-------------------------------')
         except BrokenPipeError:
-            print("fails to start qemu")
             # This just means that QEMU never started
-            pass
+            test_stats[test] = FAILED
+            test_stdout[test] = "failed to start qemu"
+            print(test_stdout[test])
 
     # examine test stats
     test_summary(test_stats, lab, test_stdout, args.autograder)
