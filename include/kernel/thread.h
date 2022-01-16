@@ -32,8 +32,7 @@ typedef int thread_func(void *aux);
 
 void thread_sys_init(void);
 
-/* Create a new thread, starts executing at func with aux as its parameter.
-   For fork vs exec we can pass in different func when we create the process.  */
+/* Create a new thread, attach it to process p */
 struct thread* thread_create(const char *name, struct proc *p, int priority);
 
 
