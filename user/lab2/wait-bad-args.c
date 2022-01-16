@@ -18,7 +18,7 @@ int main()
     }
 
     // wait with bad status arg
-    if ((ret = wait(pid, -1)) != ERR_FAULT)
+    if ((ret = wait(pid, (int*)-1)) != ERR_FAULT)
     {
         error("wait-bad-args: wait did not return ERR_FAULT when passed a bad status arg, return value was %d", ret);
     }

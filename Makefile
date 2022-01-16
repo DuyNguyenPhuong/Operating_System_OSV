@@ -30,6 +30,7 @@ KERNEL_ELF := $(BUILD)/kernel/kernel.elf
 LARGEFILE := $(BUILD)/largefile
 README := $(BUILD)/README
 SMALLFILE := $(BUILD)/smallfile
+TESTFILE := $(BUILD)/testfile
 
 ### Default rule ###
 all: osv tools
@@ -73,14 +74,18 @@ $(SMALLFILE):
 	$(MKDIR_P) $(@D)
 	echo "aaaaaaaaaabbbbbbbbbbccccc" > $@
 
+$(TESTFILE):             
+       $(MKDIR_P) $(@D)  
+       echo "abcdef" > $@
+
 $(README):
 	$(MKDIR_P) $(@D)
 	echo "*************************************************" > $@
 	echo "***OSV, the Ultimate Teaching Operating System***" >> $@
 	echo "*************************************************" >> $@
 
-$(FS_IMG): $(BUILD)/tools/mkfs $(README) $(LARGEFILE) $(SMALLFILE) $(USER_OBJS)
-	$(BUILD)/tools/mkfs $@ $(README) $(LARGEFILE) $(SMALLFILE) $(USER_BIN)
+$(FS_IMG): $(BUILD)/tools/mkfs $(README) $(LARGEFILE) $(SMALLFILE) $(TESTFILE) $(USER_OBJS)
+       $(BUILD)/tools/mkfs $@ $(README) $(LARGEFILE) $(SMALLFILE) $(TESTFILE) $(USER_BIN)
 
 $(KERNEL_ELF): $(ARCH_KERNEL_OBJS) $(ARCH_KERNEL_LD) $(KERNEL_OBJS) $(KLIB_OBJS) $(ENTRY_AP)
 	$(LD) $(LDFLAGS) -T $(ARCH_KERNEL_LD) -o $@ $(ARCH_KERNEL_OBJS) $(KERNEL_OBJS) $(KLIB_OBJS) -b binary $(ENTRY_AP)
