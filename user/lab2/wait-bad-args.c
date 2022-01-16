@@ -28,7 +28,7 @@ int main()
         error("wait-bad-args: wait(-1, NULL) did not return child pid %d, return value was %d", pid, ret);
     }
 
-    pass("wait-twice");
+    pass("wait-bad-args");
     exit(0);
     return 0;
 }
