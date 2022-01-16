@@ -75,8 +75,8 @@ $(SMALLFILE):
 	echo "aaaaaaaaaabbbbbbbbbbccccc" > $@
 
 $(TESTFILE):             
-       $(MKDIR_P) $(@D)  
-       echo "abcdef" > $@
+	$(MKDIR_P) $(@D)  
+	echo "abcdef" > $@
 
 $(README):
 	$(MKDIR_P) $(@D)
@@ -85,7 +85,7 @@ $(README):
 	echo "*************************************************" >> $@
 
 $(FS_IMG): $(BUILD)/tools/mkfs $(README) $(LARGEFILE) $(SMALLFILE) $(TESTFILE) $(USER_OBJS)
-       $(BUILD)/tools/mkfs $@ $(README) $(LARGEFILE) $(SMALLFILE) $(TESTFILE) $(USER_BIN)
+	$(BUILD)/tools/mkfs $@ $(README) $(LARGEFILE) $(SMALLFILE) $(TESTFILE) $(USER_BIN)
 
 $(KERNEL_ELF): $(ARCH_KERNEL_OBJS) $(ARCH_KERNEL_LD) $(KERNEL_OBJS) $(KLIB_OBJS) $(ENTRY_AP)
 	$(LD) $(LDFLAGS) -T $(ARCH_KERNEL_LD) -o $@ $(ARCH_KERNEL_OBJS) $(KERNEL_OBJS) $(KLIB_OBJS) -b binary $(ENTRY_AP)
