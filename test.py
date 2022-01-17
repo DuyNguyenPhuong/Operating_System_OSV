@@ -195,9 +195,13 @@ def main():
             pin.write(f"{test}\n")
             pin.flush()
             time.sleep(0.2)
-            print(f"sending quit\n")
-            pin.write(f"quit\n")
-            pin.flush()
+            try:
+                print(f"sending quit\n")
+                pin.write(f"quit\n")
+                pin.flush()
+            except BrokenPipeError:
+                # ok if qemu has already quit
+                pass
             try:
                 print("waiting for osv")
                 qemu.wait(timeout=TIMEOUT[lab])
@@ -212,8 +216,12 @@ def main():
                 qemu.terminate()
                 pass
             finally:
-                pin.close()
-                pout.close()
+                try:
+                    pin.close()
+                    pout.close()
+                except BrokenPipeError:
+                    # ok if already closed
+                    pass
 
             # read output from test
             if check_output(out, test, ofs):
