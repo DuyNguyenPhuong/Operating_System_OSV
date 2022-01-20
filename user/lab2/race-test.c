@@ -4,10 +4,13 @@
 int
 main()
 {
-    int i, pid, ret;
+    int i, pid_original, pid, ret;
 
-    // spawn 100 children
-    for (i = 0; i < 100; i++) {
+    if ((pid_original = fork()) < 0) {
+        error("race-test: fork failed, return value was %d", pid_original);
+    }
+    // both child and parent fork 1000 children
+    for (i = 0; i < 1000; i++) {
         if ((pid = fork()) < 0) {
             error("race-test: fork failed, return value was %d", pid);
         }
@@ -17,14 +20,22 @@ main()
         }
     }
 
-    // wait and reclaim all 100 children
-    for (i = 0; i < 100; i++) {
+    // both child and parent wait and reclaim all 1000 children
+    for (i = 0; i < 1000; i++) {
         if ((ret = wait(-1, NULL)) < 0) {
             error("race-test: failed to collect children, return value was %d", ret);
         }
     }
 
-    pass("race-test");
+    // parent waits for the original child
+    if (pid_original) {
+        if ((ret = wait(-1, NULL)) < 0) {
+            error("race-test: failed to collect children, return value was %d", ret);
+        }
+        pass("race-test");
+        exit(0);
+    }
+
+    // original child exits
     exit(0);
-    return 0;
 }

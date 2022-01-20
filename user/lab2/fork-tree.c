@@ -40,7 +40,7 @@ childpidtesthelper(int depth)
 int
 main()
 {
-    childpidtesthelper(2);
+    childpidtesthelper(5);
 
     pass("fork-tree");
     exit(0);

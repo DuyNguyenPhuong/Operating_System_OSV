@@ -30,13 +30,13 @@ int main()
                 pass("exit-test");
             }
             exit(getpid());
-            error("fork-test: exit failed to destroy process %d", getpid());
+            error("exit-test: exit failed to destroy process %d", getpid());
         }
     }
 
     if (n != nproc)
     {
-        error("fork-test: in a loop calling fork %d times, it was called %d times instead", nproc, n);
+        error("exit-test: in a loop calling fork %d times, fork returned an error after %n calls", nproc, n);
     }
     close(fd);
     exit(0);
