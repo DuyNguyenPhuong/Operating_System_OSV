@@ -14,6 +14,7 @@ from subprocess import Popen, TimeoutExpired
 TIMEOUT = {
     1: 60,
     2: 60
+    3: 60
 }
 
 test_weights = {
@@ -35,9 +36,13 @@ test_weights = {
     "2-wait-twice": 5,
     "2-wait-bad-args": 15,
     "2-exit-test": 15,
-    "3-spawn-args": 0,
-    "3-pipe-robust": 0,
-    "3-pipe-test": 0,
+    "3-pipe-basic": 10,
+    "3-pipe-bad-args": 10,
+    "3-pipe-errors": 10,
+    "3-pipe-test": 20,
+    "3-pipe-robust": 20,
+    "3-pipe-race": 20,
+    "4-spawn-args": 0,
     "4-bad-mem-access": 10,
     "4-grow-stack": 25,
     "4-grow-stack-edgecase": 10,
@@ -90,7 +95,7 @@ def check_output(out, test, ofs):
 
 def test_summary(test_stats, lab, outputs, autograder):
     score = 0
-    if lab == 1 or lab == 2:
+    if lab == 1 or lab == 2 or lab == 3:
         results = {"tests": []}
         for test, result in test_stats.items():
             if f"{lab}-{test}" in test_weights:

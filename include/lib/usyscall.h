@@ -254,8 +254,8 @@ int dup(int fd);
  * 
  * Return:
  * ERR_OK on success
- * ERR_INVAL if fds address is invalid
- * ERR_NOMEM if no 2 available new file descriptors
+ * ERR_FAULT if fds address is invalid
+ * ERR_NOMEM if 2 new file descriptors are not available
  */
 int pipe(int* fds);
 /*
