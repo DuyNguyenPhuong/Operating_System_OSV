@@ -13,8 +13,8 @@ from subprocess import Popen, TimeoutExpired
 # The number of seconds it takes to run the test suite
 TIMEOUT = {
     1: 60,
-    2: 60
-    3: 60
+    2: 60,
+    3: 60,
 }
 
 test_weights = {
