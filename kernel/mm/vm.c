@@ -253,7 +253,7 @@ found:
 }
 
 err_t
-memregion_extend(struct memregion *region, int size, vaddr_t *old_bound)
+memregion_extend(struct memregion *region, ssize_t size, vaddr_t *old_bound)
 {
     return ERR_OK;
 }

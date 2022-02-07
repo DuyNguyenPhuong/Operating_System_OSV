@@ -12,7 +12,7 @@ main()
     a = sbrk(0);
     amt = 256 * 4096;
     if ((p = sbrk(amt)) != a) {
-        error("sbrk test failed to grow big address space; enough phys mem?\n");
+        error("sbrk test failed to grow big address space or did not return old bound, return value was %p", p);
     }
     lastaddr = (char *)(a + amt - 1);
     *lastaddr = 99;

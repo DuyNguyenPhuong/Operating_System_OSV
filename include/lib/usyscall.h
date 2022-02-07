@@ -227,13 +227,15 @@ int rmdir(const char *pathname);
  */
 int fstat(int fd, struct stat *stat);
 /*
- * Increase/decrement current process' data segment size.
+ * Increase/decrement current process' heap size.
  *
  * Return:
  * On success, address of the previous program break (non-negative).
- * ERR_NOMEM - Failed to extend the data segment.
+ * A negative increment greater than current heap size has no effect
+ * and current bound is returned.
+ * ERR_NOMEM - Failed to increase the heap size.
  */
-void *sbrk(int increment);
+void *sbrk(ssize_t increment);
 /*
  * Print information about the current process's address space.
  */

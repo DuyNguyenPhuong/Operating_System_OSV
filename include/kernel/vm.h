@@ -124,12 +124,14 @@ struct memregion *as_copy_memregion(struct addrspace *as, struct memregion *src,
 void as_meminfo(struct addrspace *as);
 
 /*
- * Extend a region of allocated memory by size bytes.
- * End is extended size and old_bound is returned.
+ * Extend a region of virtual memory by size bytes.
+ * End is extended size and old_bound is returned (note: size can be negative).
+ * Return ERR_VM_INVALID if the resulting region would have negative extent
+ * (ending address before starting address).
  * Return ERR_VM_BOUND if the extended region overlaps with other regions in the
  * address space.
  */
-err_t memregion_extend(struct memregion *region, int size, vaddr_t *old_bound);
+err_t memregion_extend(struct memregion *region, ssize_t size, vaddr_t *old_bound);
 
 /*
  * Change permission of a region of memory.

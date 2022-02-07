@@ -15,6 +15,7 @@ TIMEOUT = {
     1: 60,
     2: 60,
     3: 60,
+    4: 60,
 }
 
 test_weights = {
@@ -42,9 +43,8 @@ test_weights = {
     "3-pipe-test": 20,
     "3-pipe-robust": 20,
     "3-pipe-race": 20,
-    "4-spawn-args": 0,
     "4-bad-mem-access": 10,
-    "4-grow-stack": 25,
+    "4-grow-stack": 15,
     "4-grow-stack-edgecase": 10,
     "4-malloc-test": 10,
     "4-sbrk-decrement": 15,
@@ -95,7 +95,7 @@ def check_output(out, test, ofs):
 
 def test_summary(test_stats, lab, outputs, autograder):
     score = 0
-    if lab == 1 or lab == 2 or lab == 3:
+    if lab in TIMEOUT:
         results = {"tests": []}
         for test, result in test_stats.items():
             if f"{lab}-{test}" in test_weights:
@@ -218,6 +218,7 @@ def main():
                 test_stdout[test] = f"Exceeded Timeout {TIMEOUT[lab]} seconds\n\
                 possibly due to kernel panic, check contents of lab{lab}output file"
                 print(test_stdout[test])
+                output = ""
                 qemu.terminate()
                 pass
             finally:
