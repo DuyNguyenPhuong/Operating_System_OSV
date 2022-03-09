@@ -693,6 +693,8 @@ fs_open_file(const char *path, int flags, fmode_t mode, struct file **file)
         return err;
     }
 
+    parent->sb->s_ops->journal_begin_txn(parent->sb);
+
     if (*name == 0) {
         // opening '/'. The root directory doesn't have a parent -- parent now
         // points to '/', just return it.
@@ -725,17 +727,20 @@ fs_open_file(const char *path, int flags, fmode_t mode, struct file **file)
     // Allocate a new file object
     if ((*file = fs_alloc_file()) == NULL) {
         fs_release_inode(fi);
+        parent->sb->s_ops->journal_end_txn(parent->sb);
         return ERR_NOMEM;
     }
     (*file)->f_inode = fi;
     // i_fops is read-only, so no need to protect with i_lock
     (*file)->f_ops = fi->i_fops;
     (*file)->oflag = flags & ~FS_CREAT;
+    parent->sb->s_ops->journal_end_txn(parent->sb);
     return ERR_OK;
 
 fail:
     sleeplock_release(&parent->i_lock);
     fs_release_inode(parent);
+    parent->sb->s_ops->journal_end_txn(parent->sb);
     return err;
 }
 
