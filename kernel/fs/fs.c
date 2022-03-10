@@ -721,13 +721,13 @@ fs_open_file(const char *path, int flags, fmode_t mode, struct file **file)
         }
         kassert(fi);
         sleeplock_release(&parent->i_lock);
-        fs_release_inode(parent);
     }
 
     // Allocate a new file object
     if ((*file = fs_alloc_file()) == NULL) {
-        fs_release_inode(fi);
         parent->sb->s_ops->journal_end_txn(parent->sb);
+        fs_release_inode(fi);
+        fs_release_inode(parent);
         return ERR_NOMEM;
     }
     (*file)->f_inode = fi;
@@ -735,12 +735,13 @@ fs_open_file(const char *path, int flags, fmode_t mode, struct file **file)
     (*file)->f_ops = fi->i_fops;
     (*file)->oflag = flags & ~FS_CREAT;
     parent->sb->s_ops->journal_end_txn(parent->sb);
+    fs_release_inode(parent);
     return ERR_OK;
 
 fail:
     sleeplock_release(&parent->i_lock);
-    fs_release_inode(parent);
     parent->sb->s_ops->journal_end_txn(parent->sb);
+    fs_release_inode(parent);
     return err;
 }
 
