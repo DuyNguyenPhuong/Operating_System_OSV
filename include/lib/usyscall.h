@@ -95,24 +95,29 @@ void sleep(unsigned int seconds);
  * of the following access modes:
  *   FS_RDONLY - Read-only mode
  *   FS_WRONLY - Write-only mode
- *   FS_RDWR - Read-write mode
+ *   FS_RDWR   - Read-write mode
  * flags can additionally include FS_CREAT. If FS_CREAT is included, a new file
  * is created with the specified permission (mode) if it does not exist yet.
  *
+ * Each open file maintains a current position, initially zero.
+ *
  * Return:
- * Non-negative file descriptor on success.
- * ERR_FAULT - Address of pathname is invalid.
- * ERR_INVAL - flags has invalid value.
- * ERR_NOTEXIST - File specified by pathname does not exist, and FS_CREAT is not
- *                specified in flags.
- * ERR_NOTEXIST - A directory component in pathname does not exist.
- * ERR_NORES - Failed to allocate inode in directory (FS_CREAT is specified)
- * ERR_FTYPE - A component used as a directory in pathname is not a directory.
- * ERR_NOMEM - Failed to allocate memory.
+ * On success, non-negative file descriptor. The file descriptor returned by a
+ *   successful call will be the lowest-numbered file descriptor not currently
+ *   open for the process.
+ * On failure:
+ *   ERR_FAULT - Address of pathname is invalid.
+ *   ERR_INVAL - flags has invalid value.
+ *   ERR_NOTEXIST - File specified by pathname does not exist, and FS_CREAT is not
+ *                  specified in flags.
+ *   ERR_NOTEXIST - A directory component in pathname does not exist.
+ *   ERR_NORES - Failed to allocate inode in directory (FS_CREAT is specified).
+ *   ERR_FTYPE - A component used as a directory in pathname is not a directory.
+ *   ERR_NOMEM - Failed to allocate memory.
  */
 int open(const char *pathname, int flags, fmode_t mode);
 /*
- * Close a file descriptor.
+ * Close the given file descriptor.
  *
  * Return:
  * ERR_OK - File successfully closed.
@@ -120,24 +125,40 @@ int open(const char *pathname, int flags, fmode_t mode);
  */
 int close(int fd);
 /*
- * Read from a file descriptor.
+ * Read from a file descriptor. Reads up to count bytes from the current position
+ * of the file descriptor fd and places those bytes into buf. The current position
+ * of the file descriptor is updated by number of bytes read.
+ *
+ * If there are insufficient available bytes to complete the request,
+ * reads as many as possible before returning with that number of bytes.
+ * Fewer than count bytes can be read in various conditions:
+ * If the current position + count is beyond the end of the file.
+ * If this is a pipe or console device and fewer than count bytes are available
+ * If this is a pipe and the other end of the pipe has been closed.
  *
  * Return:
  * On success, the number of bytes read (non-negative). The file position is
- * advanced by this number.
- * ERR_FAULT - Address of buf is invalid.
- * ERR_INVAL - fd isn't a valid open file descriptor.
+ *   advanced by this number.
+ * On failure:
+ *   ERR_FAULT - Address of buf is invalid.
+ *   ERR_INVAL - fd isn't a valid open file descriptor.
  */
 ssize_t read(int fd, void *buf, size_t count);
 /*
- * Write to a file descriptor.
+ * Write to a file descriptor. Writes up to count bytes from buf to the current
+ * position of the file descriptor. The current position of the file descriptor
+ * is updated by that number of bytes.
+ *
+ * If the full write cannot be completed, writes as many as possible before
+ * returning with that number of bytes. For example, if the disk runs out of space.
  *
  * Return:
  * On success, the number of bytes (non-negative) written. The file position is
- * advanced by this number.
- * ERR_FAULT - Address of buf is invalid;
- * ERR_INVAL - fd isn't a valid open file descriptor.
- * ERR_END - if fd refers to a pipe with no open read
+ *   advanced by this number.
+ * On failure:
+ *   ERR_FAULT - Address of buf is invalid.
+ *   ERR_INVAL - fd isn't a valid open file descriptor.
+ *   ERR_END - fd refers to a pipe with no open read.
  */
 ssize_t write(int fd, const void *buf, size_t count);
 /*
@@ -193,7 +214,9 @@ int mkdir(const char *pathname);
  */
 int chdir(const char *path);
 /*
- * Read a directory entry.
+ * Populate the struct dirent pointer with the next entry in a directory.
+ * The current position of the file descriptor is updated to the next entry.
+ * Only fds corresponding to directories are valid for readdir.
  *
  * Return:
  * ERR_OK - A directory entry is successfully read into dirent.
@@ -218,12 +241,14 @@ int readdir(int fd, struct dirent *dirent);
  */
 int rmdir(const char *pathname);
 /*
- * Get file status.
+ * Get the file status in the struct stat pointer passed in to the function.
+ * Console (stdin, stdout) and all console dupped fds are not valid fds for fstat.
+ * Only real files in the file system are valid for fstat.
  *
  * Return:
  * ERR_OK - File status is written in stat.
  * ERR_FAULT - Address of stat is invalid.
- * ERR_INVAL - fd isn't a valid open file descriptor.
+ * ERR_INVAL - fd isn't a valid open file descriptor or refers to non file.
  */
 int fstat(int fd, struct stat *stat);
 /*
@@ -242,11 +267,14 @@ void *sbrk(ssize_t increment);
 void meminfo();
 /*
  * Duplicate the file descriptor fd, must use the smallest unused file descriptor.
+ * Reading/writing from a dupped fd should advance the file position of the original fd
+ * and vice versa.
  *
  * Return:
- * Non-negative file descriptor on success
- * ERR_INVAL if fd is invalid
- * ERR_NOMEM if no available new file descriptor
+ * On success, non-negative file descriptor.
+ * On failure:
+ *   ERR_INVAL if fd is invalid.
+ *   ERR_NOMEM if no available new file descriptor.
  */
 int dup(int fd);
 /*
