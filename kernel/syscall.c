@@ -330,7 +330,7 @@ sys_chdir(void *arg)
 static sysret_t
 sys_readdir(void *arg)
 {
-    panic("syscall readir not implemented");
+    panic("syscall readdir not implemented");
 }
 
 // int rmdir(const char *pathname);
