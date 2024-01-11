@@ -1,0 +1,40 @@
+Authur: Duy Nguyen
+Question 1:
+Line 47 in main, which is sched_start(), prints the physical map
+
+How do I find the answer: I kept clicking n (next command) until I see the physical
+memory map is print in the "make qemu-gdb" terminal. When the physical memory map
+appears it means that the latest command prints it.
+
+Question 2:
+
+Address of main is 0xffffffff80109356
+
+This is a virtual address as the physical address only range from
+0x0 to 0x100000000
+
+So the GDB doesn't work on physical address as GDB operates with virtual addresses
+
+Because each process is allocated its own virtual address space, which is mapped to physical memory 
+by the operating system. This mapping is not directly to GDB.
+
+Reference: https://cs.nyu.edu/~mwalfish/classes/ut/s10-cs372h/ref/qemu-gdb-reference.html#:~:text=While%20GDB%20can%20only%20access,while%20setting%20up%20virtual%20memory.
+
+Question 3:
+
+1. kernel_init() starts the 2nd thread. While the 1st threads start immediately from the beginning
+of main
+2. 2nd thread start in main_ap function. Specifically,
+it starts from kernel_init then mp_start_ap then _binary_entry_ap_start, then entry_ap.S, 
+which calls main_ap function
+3. 
+When we set the break point in main_ap and main:
++ At the beginning of the main function: only threads 1.1 is running, 1.2 is halted
++ When the program stops at main_ap: 2 threads is running:
+- Thread 1.1 is running in 0xffffffff8010096c in lapic_start_ap
+- Thread 1.2 is running in main_ap
+
+
+
+
+

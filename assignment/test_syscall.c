@@ -217,8 +217,8 @@ sys_open(void *arg)
 {
     sysarg_t pathname_arg, flags_arg, mode_arg;
     kassert(fetch_arg(arg, 1, &pathname_arg));
-    kassert(fetch_arg(arg, 2, &flags_arg));
-    kassert(fetch_arg(arg, 3, &mode_arg));
+    kassert(fetch_arg(arg, 3, &flags_arg));
+    kassert(fetch_arg(arg, 2, &mode_arg));
 
     // Note on kassert:
     /*
@@ -245,7 +245,6 @@ sys_open(void *arg)
     }
 
     // Current Process. Look it from other code
-    // Call into fs_open_file with our chosen fd
     struct proc *p = proc_current();
     kassert(p);
 
@@ -256,7 +255,6 @@ sys_open(void *arg)
         return res;
     }
     // panic("syscall open not implemented");
-    // Otherwise, return our chosen fd
     return (sysret_t)2;
 
     // SUCH A LIE -- return the fd we picked
