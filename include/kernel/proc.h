@@ -33,8 +33,8 @@ struct proc
     // int curFd;
 
     // File descriptors
-    struct file *file_descriptors[PROC_MAX_FILE - 2]; // Array of file descriptors
-    int curFd;                                        // Current file descriptor index
+    struct file *file_descriptors[PROC_MAX_FILE]; // Array of file descriptors
+    int curFd;                                    // Current file descriptor index
 };
 
 struct proc *init_proc;

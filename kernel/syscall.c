@@ -218,7 +218,7 @@ int find_lowest_null_fd(struct proc *p)
         return -1; // Return -1 or another error code if the process is NULL
     }
 
-    for (int fd = 0; fd < PROC_MAX_FILE - 2; fd++)
+    for (int fd = 2; fd < PROC_MAX_FILE; fd++)
     {
         if (p->file_descriptors[fd] == NULL)
         {
@@ -288,13 +288,12 @@ sys_close(void *arg)
     int fd = (int)fd_arg;
 
     // Validate the fd number
-    if (fd < 0 || fd >= PROC_MAX_FILE - 2)
+    if (fd < 0 || fd >= PROC_MAX_FILE)
     {
         return ERR_INVAL;
     }
 
     // Current Process. Look it from other code
-    // Call into fs_open_file with our chosen fd
     struct proc *p = proc_current();
     kassert(p);
 
@@ -317,18 +316,46 @@ sys_read(void *arg)
     sysarg_t fd, buf, count;
 
     kassert(fetch_arg(arg, 1, &fd));
-    kassert(fetch_arg(arg, 3, &count));
     kassert(fetch_arg(arg, 2, &buf));
+    kassert(fetch_arg(arg, 3, &count));
 
     if (!validate_ptr((void *)buf, (size_t)count))
     {
         return ERR_FAULT;
     }
 
+    int fd_int = (int)fd;
+
     if (fd == 0)
     {
         return console_read((void *)buf, (size_t)count);
     }
+    else
+    {
+        // Current Process. Look it from other code
+        struct proc *p = proc_current();
+        kassert(p);
+        // Retrieve the file structure associated with the file descriptor
+        struct file *file = p->file_descriptors[fd_int];
+
+        if (file == NULL)
+        {
+            // File descriptor is not valid
+            return ERR_INVAL;
+        }
+
+        // Check if the file has read permissions
+        // if (!(file->oflag == FS_RDONLY))
+        // {
+        //     return ERR_INVAL;
+        // }
+
+        // Perform the read operation using fs_read_file
+        ssize_t bytes_read = fs_read_file(file, (void *)buf, (size_t)count, &(file->f_pos));
+
+        return bytes_read;
+    }
+
     return ERR_INVAL;
 }
 

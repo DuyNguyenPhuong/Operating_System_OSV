@@ -99,10 +99,13 @@ proc_init(char *name)
     list_init(&p->threads);
 
     // Initialize the file descriptors to NULL
-    for (int i = 0; i < PROC_MAX_FILE - 2; i++)
+    for (int i = 0; i < PROC_MAX_FILE; i++)
     {
         p->file_descriptors[i] = NULL;
     }
+
+    p->file_descriptors[0] = &stdin;
+    p->file_descriptors[1] = &stdin;
 
     p->curFd = 0;
 
