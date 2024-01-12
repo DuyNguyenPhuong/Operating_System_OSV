@@ -211,27 +211,33 @@ sys_sleep(void *arg)
     panic("syscall sleep not implemented");
 }
 
+int find_lowest_null_fd(struct proc *p)
+{
+    if (p == NULL)
+    {
+        return -1; // Return -1 or another error code if the process is NULL
+    }
+
+    for (int fd = 0; fd < PROC_MAX_FILE - 2; fd++)
+    {
+        if (p->file_descriptors[fd] == NULL)
+        {
+            return fd;
+        }
+    }
+
+    return -1; // Return -1 or another error code if no NULL fd is found
+}
+
 // int open(const char *pathname, int flags, fmode_t mode);
 static sysret_t
 sys_open(void *arg)
 {
+    // Fetch the argument
     sysarg_t pathname_arg, flags_arg, mode_arg;
     kassert(fetch_arg(arg, 1, &pathname_arg));
     kassert(fetch_arg(arg, 2, &flags_arg));
     kassert(fetch_arg(arg, 3, &mode_arg));
-
-    // Note on kassert:
-    /*
-    #define kassert(expr) \
-        ((expr) ? (void)0 : panic(#expr))
-
-    if (expr){
-        (void) 0
-    }
-    else{
-        panic(#expr)
-    }
-    */
 
     // Convert argument to proper tu[es]
     char *pathname = (char *)pathname_arg;
@@ -249,26 +255,59 @@ sys_open(void *arg)
     struct proc *p = proc_current();
     kassert(p);
 
-    err_t res = fs_open_file(pathname, flags, mode, &(p->file2));
+    // Find the lowest available fd
+    int fd = find_lowest_null_fd(p);
+
+    if (fd == -1)
+    {
+        // When we can't find an available fd
+        return ERR_NOMEM;
+    }
+
+    // Open the file
+    err_t res = fs_open_file(pathname, flags, mode, &(p->file_descriptors[fd]));
 
     if (res != ERR_OK)
     {
         return res;
     }
-    // panic("syscall open not implemented");
-    // Otherwise, return our chosen fd
-    return (sysret_t)2;
 
-    // SUCH A LIE -- return the fd we picked
-
-    // Call fs_open_file; fs_close_file
+    // Return the open fd
+    return (sysret_t)fd;
 }
 
 // int close(int fd);
 static sysret_t
 sys_close(void *arg)
 {
-    panic("syscall close not implemented");
+    // Fetch the argument
+    sysarg_t fd_arg;
+    kassert(fetch_arg(arg, 1, &fd_arg));
+
+    // Convert argument to proper tu[es]
+    int fd = (int)fd_arg;
+
+    // Validate the fd number
+    if (fd < 0 || fd >= PROC_MAX_FILE - 2)
+    {
+        return ERR_INVAL;
+    }
+
+    // Current Process. Look it from other code
+    // Call into fs_open_file with our chosen fd
+    struct proc *p = proc_current();
+    kassert(p);
+
+    // Check if the fd is opened or not
+    if (p->file_descriptors[fd] == NULL)
+    {
+        return ERR_INVAL;
+    }
+
+    // Close
+    fs_close_file(p->file_descriptors[fd]);
+
+    return ERR_OK;
 }
 
 // int read(int fd, void *buf, size_t count);

@@ -254,8 +254,13 @@ sys_open(void *arg)
     {
         return res;
     }
+
+    int return_fd = p->curFd;
+    p->curFd = p->curFd + 1;
+
+    kprintf(p->curFd);
     // panic("syscall open not implemented");
-    return (sysret_t)2;
+    return (sysret_t)return_fd;
 
     // SUCH A LIE -- return the fd we picked
 

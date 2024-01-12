@@ -22,7 +22,7 @@ struct proc
     Node proc_node;    // used by ptable to keep track each process
 
     // File descripter
-    struct file *file2;
+    // struct file *file2;
     // Ideally this would be replaced with an array or msth
     // 0: stdin
     // 1: stdout
@@ -30,6 +30,11 @@ struct proc
     // 3: ..
     //
     // PROC_MAX_FILE-1: starts null ; just a struct file
+    // int curFd;
+
+    // File descriptors
+    struct file *file_descriptors[PROC_MAX_FILE - 2]; // Array of file descriptors
+    int curFd;                                        // Current file descriptor index
 };
 
 struct proc *init_proc;

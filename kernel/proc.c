@@ -98,7 +98,13 @@ proc_init(char *name)
 
     list_init(&p->threads);
 
-    p->file2 = NULL;
+    // Initialize the file descriptors to NULL
+    for (int i = 0; i < PROC_MAX_FILE - 2; i++)
+    {
+        p->file_descriptors[i] = NULL;
+    }
+
+    p->curFd = 0;
 
     // cwd for all processes are root for now
     sb = root_sb;
