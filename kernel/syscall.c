@@ -305,7 +305,7 @@ sys_close(void *arg)
 
     // Close
     fs_close_file(p->file_descriptors[fd]);
-
+    p->file_descriptors[fd] = NULL;
     return ERR_OK;
 }
 
@@ -344,12 +344,6 @@ sys_read(void *arg)
             return ERR_INVAL;
         }
 
-        // Check if the file has read permissions
-        // if (!(file->oflag == FS_RDONLY))
-        // {
-        //     return ERR_INVAL;
-        // }
-
         // Perform the read operation using fs_read_file
         ssize_t bytes_read = fs_read_file(file, (void *)buf, (size_t)count, &(file->f_pos));
 
@@ -363,11 +357,11 @@ sys_read(void *arg)
 static sysret_t
 sys_write(void *arg)
 {
-    sysarg_t fd, count, buf;
+    sysarg_t fd, buf, count;
 
     kassert(fetch_arg(arg, 1, &fd));
-    kassert(fetch_arg(arg, 3, &count));
     kassert(fetch_arg(arg, 2, &buf));
+    kassert(fetch_arg(arg, 3, &count));
 
     if (!validate_ptr((void *)buf, (size_t)count))
     {
@@ -464,7 +458,36 @@ sys_chdir(void *arg)
 static sysret_t
 sys_readdir(void *arg)
 {
-    panic("syscall readdir not implemented");
+    sysarg_t fd, dirent_ptr;
+
+    kassert(fetch_arg(arg, 1, &fd));
+    kassert(fetch_arg(arg, 2, &dirent_ptr));
+
+    // Cast sysarg_t to struct dirent pointer
+    struct dirent *dirent = (struct dirent *)dirent_ptr;
+
+    // Check if the dirent pointer is valid
+    if (!validate_ptr(dirent, sizeof(struct dirent)))
+    {
+        return ERR_FAULT;
+    }
+
+    // Retrieve the file structure associated with the file descriptor
+    struct proc *p;
+    p = proc_current();
+    kassert(p);
+
+    struct file *file = p->file_descriptors[fd];
+
+    if (file == NULL)
+    {
+        // File descriptor is not valid
+        return ERR_INVAL;
+    }
+
+    // Call the helper function to perform the readdir operation
+    err_t err = fs_readdir(file, dirent);
+    return err;
 }
 
 // int rmdir(const char *pathname);
