@@ -105,7 +105,7 @@ proc_init(char *name)
     }
 
     p->file_descriptors[0] = &stdin;
-    p->file_descriptors[1] = &stdin;
+    p->file_descriptors[1] = &stdout;
 
     p->curFd = 0;
 

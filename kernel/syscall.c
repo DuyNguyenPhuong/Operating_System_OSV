@@ -229,6 +229,24 @@ int find_lowest_null_fd(struct proc *p)
     return -1; // Return -1 or another error code if no NULL fd is found
 }
 
+int find_lowest_null_fd_from_0(struct proc *p)
+{
+    if (p == NULL)
+    {
+        return -1; // Return -1 or another error code if the process is NULL
+    }
+
+    for (int fd = 0; fd < PROC_MAX_FILE; fd++)
+    {
+        if (p->file_descriptors[fd] == NULL)
+        {
+            return fd;
+        }
+    }
+
+    return -1; // Return -1 or another error code if no NULL fd is found
+}
+
 // int open(const char *pathname, int flags, fmode_t mode);
 static sysret_t
 sys_open(void *arg)
@@ -368,7 +386,12 @@ sys_write(void *arg)
         return ERR_FAULT;
     }
 
-    if (fd == 1)
+    struct proc *p;
+    p = proc_current();
+    kassert(p);
+
+    // if (fd == 1)
+    if (p->file_descriptors[fd] == &stdout)
     {
         // write some stuff for now assuming one string
         return console_write((void *)buf, (size_t)count);
@@ -526,7 +549,8 @@ sys_fstat(void *arg)
     }
 
     // Make sure the file is not stdin and stdout
-    if (fd == 1 || fd == 0){
+    if (fd == 1 || fd == 0)
+    {
         return ERR_INVAL;
     }
 
@@ -574,7 +598,41 @@ sys_meminfo(void *arg)
 static sysret_t
 sys_dup(void *arg)
 {
-    panic("syscall dup not implemented");
+    sysarg_t fd_args;
+    // Fetch the file descriptor from the system call argument
+    kassert(fetch_arg(arg, 1, &fd_args));
+
+    int fd = (int)fd_args;
+
+    if (fd < 0 || fd >= PROC_MAX_FILE)
+    {
+        return ERR_INVAL;
+    }
+
+    struct proc *p;
+    p = proc_current();
+    kassert(p);
+
+    // Retrieve the file structure associated with the file descriptor
+    struct file *file = p->file_descriptors[fd];
+    if (file == NULL)
+    {
+        // File descriptor is not valid
+        return ERR_INVAL;
+    }
+
+    // Find the smallest unused file descriptor
+    int new_fd = find_lowest_null_fd_from_0(p);
+    if (new_fd < 0)
+    {
+        // No available new file descriptor
+        return ERR_NOMEM;
+    }
+
+    // Assign the duplicated file structure to the new file descriptor
+    p->file_descriptors[new_fd] = file;
+
+    return (sysret_t)new_fd; // Return the new file descriptor
 }
 
 // int pipe(int* fds);
