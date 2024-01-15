@@ -510,7 +510,49 @@ sys_rmdir(void *arg)
 static sysret_t
 sys_fstat(void *arg)
 {
-    panic("syscall fstat not implemented");
+    // panic("syscall fstat not implemented");
+    sysarg_t fd, stat_ptr;
+
+    kassert(fetch_arg(arg, 1, &fd));
+    kassert(fetch_arg(arg, 2, &stat_ptr));
+
+    // Cast sysarg_t to struct stat pointer
+    struct stat *stat = (struct stat *)stat_ptr;
+
+    // Validate the stat pointer
+    if (!validate_ptr(stat, sizeof(struct stat)))
+    {
+        return ERR_FAULT;
+    }
+
+    // Make sure the file is not stdin and stdout
+    if (fd == 1 || fd == 0){
+        return ERR_INVAL;
+    }
+
+    struct proc *p;
+    p = proc_current();
+    kassert(p);
+
+    struct file *file = p->file_descriptors[fd];
+
+    if (file == NULL)
+    {
+        return ERR_INVAL;
+    }
+
+    // Check if the file descriptor is a regular file
+    if (file->f_inode->i_ftype != FTYPE_FILE)
+    {
+        return ERR_INVAL;
+    }
+
+    // Populate the stat structure
+    stat->size = file->f_inode->i_size;
+    stat->ftype = file->f_inode->i_ftype;
+    // Set other stat fields as necessary
+
+    return ERR_OK;
 }
 
 // void *sbrk(size_t increment);
