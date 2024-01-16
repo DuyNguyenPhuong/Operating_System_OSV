@@ -269,7 +269,6 @@ sys_open(void *arg)
     }
 
     // Current Process. Look it from other code
-    // Call into fs_open_file with our chosen fd
     struct proc *p = proc_current();
     kassert(p);
 
@@ -323,6 +322,8 @@ sys_close(void *arg)
 
     // Close
     fs_close_file(p->file_descriptors[fd]);
+
+    // Reset the file descriptors value to NULL
     p->file_descriptors[fd] = NULL;
     return ERR_OK;
 }
@@ -331,29 +332,34 @@ sys_close(void *arg)
 static sysret_t
 sys_read(void *arg)
 {
+    // Fetch the argument
     sysarg_t fd, buf, count;
 
+    // Validate teh argument
     kassert(fetch_arg(arg, 1, &fd));
     kassert(fetch_arg(arg, 2, &buf));
     kassert(fetch_arg(arg, 3, &count));
 
+    // Validate the pointers
     if (!validate_ptr((void *)buf, (size_t)count))
     {
         return ERR_FAULT;
     }
 
+    // Cast argument to int
     int fd_int = (int)fd;
 
+    // If fd is stdin
     if (fd == 0)
     {
         return console_read((void *)buf, (size_t)count);
     }
     else
     {
-        // Current Process. Look it from other code
+        // Current Process
         struct proc *p = proc_current();
         kassert(p);
-        // Retrieve the file structure associated with the file descriptor
+        // Retrieve the file
         struct file *file = p->file_descriptors[fd_int];
 
         if (file == NULL)
@@ -362,12 +368,12 @@ sys_read(void *arg)
             return ERR_INVAL;
         }
 
-        // Perform the read operation using fs_read_file
+        // Read operation using fs_read_file
         ssize_t bytes_read = fs_read_file(file, (void *)buf, (size_t)count, &(file->f_pos));
 
         return bytes_read;
     }
-
+    // If read is not successul
     return ERR_INVAL;
 }
 
@@ -375,27 +381,44 @@ sys_read(void *arg)
 static sysret_t
 sys_write(void *arg)
 {
+    // Fetch and validate the argument
     sysarg_t fd, buf, count;
 
     kassert(fetch_arg(arg, 1, &fd));
     kassert(fetch_arg(arg, 2, &buf));
     kassert(fetch_arg(arg, 3, &count));
 
+    // Validate pointer
     if (!validate_ptr((void *)buf, (size_t)count))
     {
         return ERR_FAULT;
     }
 
+    // Call the current process
     struct proc *p;
     p = proc_current();
     kassert(p);
 
-    // if (fd == 1)
+    // If this is stdout
     if (p->file_descriptors[fd] == &stdout)
     {
-        // write some stuff for now assuming one string
         return console_write((void *)buf, (size_t)count);
     }
+    else
+    {
+        struct file *file = p->file_descriptors[fd];
+        if (file == NULL)
+        {
+            // File descriptor is not valid
+            return ERR_INVAL;
+        }
+
+        // Perform the write operation
+        ssize_t bytes_written = fs_write_file(file, (void *)buf, (size_t)count, &(file->f_pos));
+
+        return bytes_written;
+    }
+    // Return error if write not successful
     return ERR_INVAL;
 }
 
@@ -481,6 +504,7 @@ sys_chdir(void *arg)
 static sysret_t
 sys_readdir(void *arg)
 {
+    // Fetch and validate argument
     sysarg_t fd, dirent_ptr;
 
     kassert(fetch_arg(arg, 1, &fd));
@@ -495,7 +519,7 @@ sys_readdir(void *arg)
         return ERR_FAULT;
     }
 
-    // Retrieve the file structure associated with the file descriptor
+    // Take current process
     struct proc *p;
     p = proc_current();
     kassert(p);
@@ -533,7 +557,7 @@ sys_rmdir(void *arg)
 static sysret_t
 sys_fstat(void *arg)
 {
-    // panic("syscall fstat not implemented");
+    // Fetch and Validate arguments
     sysarg_t fd, stat_ptr;
 
     kassert(fetch_arg(arg, 1, &fd));
@@ -554,6 +578,7 @@ sys_fstat(void *arg)
         return ERR_INVAL;
     }
 
+    // Current process
     struct proc *p;
     p = proc_current();
     kassert(p);
@@ -574,7 +599,6 @@ sys_fstat(void *arg)
     // Populate the stat structure
     stat->size = file->f_inode->i_size;
     stat->ftype = file->f_inode->i_ftype;
-    // Set other stat fields as necessary
 
     return ERR_OK;
 }
@@ -598,12 +622,15 @@ sys_meminfo(void *arg)
 static sysret_t
 sys_dup(void *arg)
 {
-    sysarg_t fd_args;
     // Fetch the file descriptor from the system call argument
+    sysarg_t fd_args;
+
     kassert(fetch_arg(arg, 1, &fd_args));
 
+    // Cast to integers
     int fd = (int)fd_args;
 
+    // Check if fd is valid file descriptors
     if (fd < 0 || fd >= PROC_MAX_FILE)
     {
         return ERR_INVAL;
