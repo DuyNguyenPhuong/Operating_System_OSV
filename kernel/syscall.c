@@ -631,6 +631,7 @@ sys_dup(void *arg)
 
     // Assign the duplicated file structure to the new file descriptor
     p->file_descriptors[new_fd] = file;
+    fs_reopen_file(p->file_descriptors[new_fd]);
 
     // Return the new file descriptor
     return (sysret_t)new_fd;
