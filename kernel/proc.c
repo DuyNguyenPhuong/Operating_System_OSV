@@ -172,13 +172,89 @@ error:
     return err;
 }
 
+/*
+Helper function: Duplicate a process
+// Duplicate the memory space
+// pid_t pid;
+// char name[PROC_NAME_LEN]; = parent name
+// struct addrspace as; Use this: as_copy_as
+// struct inode *cwd; // current working directory // same as parent
+// List threads;      // list of threads belong to the process, right now just 1 per process
+// Node proc_node;
+// File descriptors
+// struct file *file_descriptors[PROC_MAX_FILE]; // Array of file descriptors
+// int curFd;
+// For any that open in the parent --> call the fs_reopen_file
+ */
+struct proc *duplicate_process_state(struct proc *parent)
+{
+    kassert(parent);
+
+    // Allocate new process structure for child
+    struct proc *child = proc_init(parent->name);
+    // Memory allocation failed of the child
+    if (child == NULL)
+    {
+        return NULL;
+    }
+
+    // Duplicate the address space from parent to child
+    if (as_copy_as(&parent->as, &child->as) != ERR_OK)
+    {
+        proc_free(child);
+        return NULL;
+    }
+
+    child->cwd = parent->cwd;
+
+    // Duplicate file descriptors from parent to child
+    for (int i = 0; i < PROC_MAX_FILE; i++)
+    {
+        if (parent->file_descriptors[i] != NULL)
+        {
+            child->file_descriptors[i] = parent->file_descriptors[i];
+            fs_reopen_file(child->file_descriptors[i]);
+            if (child->file_descriptors[i] == NULL)
+            {
+                proc_free(child);
+                return NULL;
+            }
+        }
+        else
+        {
+            child->file_descriptors[i] = NULL;
+        }
+    }
+
+    // Copy the current file descriptor index
+    child->curFd = parent->curFd;
+
+    return child;
+}
+
 struct proc *
 proc_fork()
 {
-    kassert(proc_current()); // caller of fork must be a process
+    // kassert(proc_current()); // caller of fork must be a process
 
     /* your code here */
-    return NULL;
+    struct proc *parent = proc_current();
+    // caller of fork must be a process
+    kassert(parent);
+
+    struct proc *child = duplicate_process_state(parent);
+
+    if (child == NULL)
+    {
+        return NULL;
+    }
+
+    // Add the child process to the process table
+    spinlock_acquire(&ptable_lock);
+    list_append(&ptable, &child->proc_node);
+    spinlock_release(&ptable_lock);
+
+    return child;
 }
 
 struct proc *
