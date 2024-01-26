@@ -175,7 +175,13 @@ sys_spawn(void *arg)
 static sysret_t
 sys_wait(void *arg)
 {
-    kprintf("From sys\n");
+    // for (;;)
+    // {
+    // }
+    // panic("unreacchable");
+
+    // kprintf("From sys\n");
+
     sysarg_t pid_arg, status_arg;
 
     kassert(fetch_arg(arg, 1, &pid_arg));
@@ -198,15 +204,23 @@ sys_exit(void *arg)
 {
     sysarg_t exit_status;
 
-    // Fetch the exit status from the system call argument
+    // Fetch argument
     kassert(fetch_arg(arg, 1, &exit_status));
 
-    // Call proc_exit to terminate the process
+    // Call proc_exit
     proc_exit((int)exit_status);
 
-    // In theory, proc_exit should never return
+    // proc_exit should never return
     panic("sys_exit: proc_exit returned");
-    return ERR_OK; // This line should never be reached
+    return ERR_OK;
+
+    // kprintf("shutting down\n");
+    // shutdown();
+    // kprintf("oops still running\n");
+    // for (;;)
+    // {
+    // }
+    // panic("syscall exit not implemented");
 }
 
 // int getpid(void);
