@@ -175,26 +175,38 @@ sys_spawn(void *arg)
 static sysret_t
 sys_wait(void *arg)
 {
-    /* remove when writing your own solution */
-    for (;;)
+    kprintf("From sys\n");
+    sysarg_t pid_arg, status_arg;
+
+    kassert(fetch_arg(arg, 1, &pid_arg));
+    kassert(fetch_arg(arg, 2, &status_arg));
+
+    pid_t pid = (pid_t)pid_arg;
+    int *status = (int *)status_arg;
+
+    if (status != NULL && !validate_ptr(status, sizeof(int)))
     {
+        return ERR_FAULT;
     }
-    panic("unreacchable");
+
+    return (sysret_t)proc_wait(pid, status);
 }
 
 // void exit(int status);
 static sysret_t
 sys_exit(void *arg)
 {
-    // temp code for lab1 to terminate the kernel after one process exits
-    // remove for lab 2
-    kprintf("shutting down\n");
-    shutdown();
-    kprintf("oops still running\n");
-    for (;;)
-    {
-    }
-    panic("syscall exit not implemented");
+    sysarg_t exit_status;
+
+    // Fetch the exit status from the system call argument
+    kassert(fetch_arg(arg, 1, &exit_status));
+
+    // Call proc_exit to terminate the process
+    proc_exit((int)exit_status);
+
+    // In theory, proc_exit should never return
+    panic("sys_exit: proc_exit returned");
+    return ERR_OK; // This line should never be reached
 }
 
 // int getpid(void);

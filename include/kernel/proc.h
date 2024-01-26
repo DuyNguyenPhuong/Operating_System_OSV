@@ -35,6 +35,11 @@ struct proc
     // File descriptors
     struct file *file_descriptors[PROC_MAX_FILE]; // Array of file descriptors
     int curFd;                                    // Current file descriptor index
+    struct proc *parent;                          // Pointer to the parent process
+    List children;                                // List of child processes
+    Node child_node;
+    int has_exited;  // Flag to indicate if the process has exited
+    int exit_status; // Exit status of the process                            // Node for linking in the parent's children list
 };
 
 struct proc *init_proc;

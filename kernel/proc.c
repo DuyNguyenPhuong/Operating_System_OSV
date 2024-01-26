@@ -104,10 +104,19 @@ proc_init(char *name)
         p->file_descriptors[i] = NULL;
     }
 
+    // Initialize this
     p->file_descriptors[0] = &stdin;
     p->file_descriptors[1] = &stdout;
 
     p->curFd = 0;
+
+    p->parent = NULL;
+
+    list_init(&p->children);
+
+    p->has_exited = 0;
+
+    p->exit_status = STATUS_ALIVE;
 
     // cwd for all processes are root for now
     sb = root_sb;
@@ -254,6 +263,12 @@ proc_fork()
     list_append(&ptable, &child->proc_node);
     spinlock_release(&ptable_lock);
 
+    // Add the relationship
+
+    child->parent = parent;
+
+    list_append(&parent->children, &child->proc_node);
+
     return child;
 }
 
@@ -286,29 +301,93 @@ bool proc_detach_thread(struct thread *t)
 
 int proc_wait(pid_t pid, int *status)
 {
-    /* your code here */
-    return pid;
+    kprintf("From proc_wait \n");
+    struct proc *current_proc = proc_current();
+    kassert(current_proc);
+    struct proc *child_proc = NULL;
+    int found_child = 0;
+
+    while (1)
+    {
+        spinlock_acquire(&ptable_lock);
+
+        // Check all child processes
+        for (Node *n = list_begin(&current_proc->children); n != list_end(&current_proc->children); n = list_next(n))
+        {
+            child_proc = list_entry(n, struct proc, child_node);
+            if (pid == ANY_CHILD || child_proc->pid == pid)
+            {
+                found_child = 1;
+                if (child_proc->has_exited)
+                {
+                    // Child has exited, retrieve its exit status
+                    if (status != NULL)
+                    {
+                        *status = child_proc->exit_status;
+                    }
+
+                    // Clean up the child process's resources
+                    proc_free(child_proc);
+
+                    spinlock_release(&ptable_lock);
+                    return child_proc->pid;
+                }
+            }
+        }
+
+        spinlock_release(&ptable_lock);
+
+        if (!found_child)
+        {
+            return ERR_CHILD; // No matching child process
+        }
+    }
 }
 
 void proc_exit(int status)
 {
+    // struct thread *t = thread_current();
+    // struct proc *p = proc_current();
+
+    // // detach current thread, switch to kernel page table
+    // // free current address space if proc has no more threads
+    // // order matters here
+    // proc_detach_thread(t);
+    // t->proc = NULL;
+    // vpmap_load(kas->vpmap);
+    // as_destroy(&p->as);
+
+    // // release process's cwd
+    // fs_release_inode(p->cwd);
+
+    // thread_exit(status);
     struct thread *t = thread_current();
     struct proc *p = proc_current();
 
-    // detach current thread, switch to kernel page table
-    // free current address space if proc has no more threads
-    // order matters here
+    // Detach the current thread from the process
     proc_detach_thread(t);
     t->proc = NULL;
+
+    // Switch to kernel page table
     vpmap_load(kas->vpmap);
+
+    // Free the process's address space
     as_destroy(&p->as);
 
-    // release process's cwd
+    // Release the process's current working directory
     fs_release_inode(p->cwd);
 
-    /* your code here */
+    // Notify the parent process (if any) and set the exit status
+    if (p->parent != NULL)
+    {
+        spinlock_acquire(&ptable_lock);
+        p->exit_status = status;
+        p->has_exited = 1;
+        spinlock_release(&ptable_lock);
+    }
 
-    thread_exit(status);
+    // Exit the current thread
+    thread_exit(status); // thread_exit should not return
 }
 
 /* helper function for loading process's binary into its address space */
