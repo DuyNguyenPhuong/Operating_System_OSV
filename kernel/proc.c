@@ -114,7 +114,7 @@ proc_init(char *name)
 
     list_init(&p->children);
 
-    p->has_exited = 0;
+    p->has_exited = False;
 
     p->exit_status = STATUS_ALIVE;
 
@@ -316,6 +316,18 @@ bool proc_detach_thread(struct thread *t)
     return last_thread;
 }
 
+static void
+ptable_dump_without_lock(void)
+{
+    kprintf("ptable dump:\n");
+    for (Node *n = list_begin(&ptable); n != list_end(&ptable); n = list_next(n))
+    {
+        struct proc *p = list_entry(n, struct proc, proc_node);
+        kprintf("Process %s: pid %d\n", p->name, p->pid);
+    }
+    kprintf("\n");
+}
+
 int proc_wait(pid_t pid, int *status)
 {
     struct proc *current_proc = proc_current();
@@ -323,7 +335,7 @@ int proc_wait(pid_t pid, int *status)
     struct proc *child_proc = NULL;
     int found_child = False;
 
-    while (1)
+    while (True)
     {
         found_child = False;
         spinlock_acquire(&ptable_lock);
@@ -345,14 +357,15 @@ int proc_wait(pid_t pid, int *status)
                         *status = child_proc->exit_status;
                     }
 
+                    int child_pid = child_proc->pid;
+
                     // Clean up the child process's resources
                     // Note: Ensure that proc_free() handles all necessary cleanup
-                    proc_free(child_proc);
-
+                   
                     list_remove(&child_proc->proc_node);
-
+                    proc_free(child_proc);
                     spinlock_release(&ptable_lock);
-                    return child_proc->pid;
+                    return child_pid;
                 }
             }
         }
@@ -363,9 +376,6 @@ int proc_wait(pid_t pid, int *status)
         {
             return ERR_CHILD; // No matching child process
         }
-
-        // Implement a mechanism to avoid busy waiting
-        // yield_cpu(); or a short sleep
     }
 }
 
@@ -391,8 +401,6 @@ void proc_exit(int status)
         spinlock_acquire(&ptable_lock);
         p->exit_status = status;
         p->has_exited = True;
-        // remove of the list
-        list_remove(&p->proc_node);
         spinlock_release(&ptable_lock);
     }
 
