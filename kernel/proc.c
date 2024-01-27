@@ -328,6 +328,24 @@ ptable_dump_without_lock(void)
     kprintf("\n");
 }
 
+void close_all_fds(struct proc *process)
+{
+    if (process == NULL)
+    {
+        return; // Safety check
+    }
+
+    for (int i = 0; i < PROC_MAX_FILE; i++)
+    {
+        if (process->file_descriptors[i] != NULL)
+        {
+            // Close the file descriptor
+            fs_close_file(process->file_descriptors[i]);
+            process->file_descriptors[i] = NULL;
+        }
+    }
+}
+
 int proc_wait(pid_t pid, int *status)
 {
     struct proc *current_proc = proc_current();
@@ -361,8 +379,9 @@ int proc_wait(pid_t pid, int *status)
 
                     // Clean up the child process's resources
                     // Note: Ensure that proc_free() handles all necessary cleanup
-                   
+
                     list_remove(&child_proc->proc_node);
+                    close_all_fds(child_proc);
                     proc_free(child_proc);
                     spinlock_release(&ptable_lock);
                     return child_pid;
