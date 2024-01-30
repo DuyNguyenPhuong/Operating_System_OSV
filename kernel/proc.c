@@ -165,6 +165,17 @@ err_t proc_spawn(char *name, char **argv, struct proc **p)
     list_append(&ptable, &proc->proc_node);
     spinlock_release(&ptable_lock);
 
+    if (p != &init_proc)
+    {
+        // Add parent-child relationship
+        struct proc *parent = proc_current();
+        // kprintf("Hi1");
+        kassert(parent);
+        // kprintf("Hi2");
+        proc->parent = parent;
+        // list_append(&parent->children, &proc->proc_node);
+    }
+
     // set up trapframe for a new process
     tf_proc(t->tf, t->proc, entry_point, stackptr);
     thread_start_context(t, NULL, NULL);
@@ -245,8 +256,6 @@ struct proc *
 proc_fork()
 {
     // kassert(proc_current()); // caller of fork must be a process
-
-    /* your code here */
     struct proc *parent = proc_current();
     // caller of fork must be a process
     kassert(parent);
@@ -352,9 +361,9 @@ int proc_wait(pid_t pid, int *status)
     kassert(current_proc);
     struct proc *child_proc = NULL;
     int found_child = False;
-
     while (True)
     {
+        // kprintf("In the while \n");
         found_child = False;
         spinlock_acquire(&ptable_lock);
 
@@ -374,11 +383,9 @@ int proc_wait(pid_t pid, int *status)
                     {
                         *status = child_proc->exit_status;
                     }
-
                     int child_pid = child_proc->pid;
 
                     // Clean up the child process's resources
-                    // Note: Ensure that proc_free() handles all necessary cleanup
 
                     list_remove(&child_proc->proc_node);
                     close_all_fds(child_proc);
@@ -388,9 +395,7 @@ int proc_wait(pid_t pid, int *status)
                 }
             }
         }
-
         spinlock_release(&ptable_lock);
-
         if (!found_child)
         {
             return ERR_CHILD; // No matching child process

@@ -39,7 +39,7 @@ struct proc
     List children;                                // List of child processes
     Node child_node;
     int has_exited;  // Flag to indicate if the process has exited
-    int exit_status; // Exit status of the process                            // Node for linking in the parent's children list
+    int exit_status; // Exit status of the process
 };
 
 struct proc *init_proc;

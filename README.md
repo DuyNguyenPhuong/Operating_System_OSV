@@ -112,16 +112,4 @@ On failure: `ERR_FAULT` - Address of `wstatus` is invalid. Or `ERR_CHILD` - The 
 
 ## Risk analysis
 
-* Accessing memory after deallocation can result in reading garbage values or cause a kernel panic. In particular, be careful about accessing fields of a `struct proc` after `proc_free` might have been called on it.
-
-* Make sure you release any held locks before a function returns (otherwise the system could deadlock as one thread holds the lock forever).
-
-### Unanswered questions
-
-* I don't undertand why the `sys_exit` should never return. If so should the return type be `void`
-
-* Where will the data structurs: Process Table, Exit Status Table defined in
-
-* In `proc_exit`, what is the "rest" we need to clean up besides process’s address space and its thread
-
-* A parent can only wait for the same child once. I don't understand how a process can wait for 2 other process as the parametes for `sys_wait` has only 1 pid
+* Accessing memory after deallocation can result in reading garbage values or cause a kernel panic. In particular, be careful about accessing fields of a `struct proc` after `proc_free` might have been called on it
