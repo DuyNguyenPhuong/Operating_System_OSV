@@ -165,9 +165,9 @@ err_t proc_spawn(char *name, char **argv, struct proc **p)
     list_append(&ptable, &proc->proc_node);
     spinlock_release(&ptable_lock);
 
+    // Add parent-child relationship
     if (p != &init_proc)
     {
-        // Add parent-child relationship
         struct proc *parent = proc_current();
         // kprintf("Hi1");
         kassert(parent);
@@ -270,8 +270,8 @@ proc_fork()
     // Add the relationship
 
     child->parent = parent;
-
-    list_append(&parent->children, &child->proc_node);
+    // Dont use this
+    // list_append(&parent->children, &child->proc_node);
 
     // Update child thread
     struct thread *t;
@@ -279,8 +279,8 @@ proc_fork()
     if ((t = thread_create(child->name, child, DEFAULT_PRI)) == NULL)
     {
         // err = ERR_NOMEM;
-        // goto error;
-        return NULL;
+        goto error;
+        // return NULL;
     }
     *t->tf = *thread_current()->tf;
     tf_set_return(t->tf, 0);
@@ -292,10 +292,10 @@ proc_fork()
     spinlock_release(&ptable_lock);
     return child;
 
-    // error:
-    //     as_destroy(&child->as);
-    //     proc_free(child);
-    //     return NULL;
+error:
+    as_destroy(&child->as);
+    proc_free(child);
+    return NULL;
 }
 
 struct proc *
@@ -363,7 +363,11 @@ int proc_wait(pid_t pid, int *status)
     int found_child = False;
     while (True)
     {
-        // kprintf("In the while \n");
+        // if (current_proc->pid > 0)
+        // {
+        //     kprintf("[%d] In the while \n", current_proc->pid);
+        // }
+
         found_child = False;
         spinlock_acquire(&ptable_lock);
 
@@ -422,10 +426,10 @@ void proc_exit(int status)
     // Notify the parent process
     if (p->parent != NULL)
     {
-        spinlock_acquire(&ptable_lock);
+        // spinlock_acquire(&ptable_lock);
         p->exit_status = status;
         p->has_exited = True;
-        spinlock_release(&ptable_lock);
+        // spinlock_release(&ptable_lock);
     }
 
     // Exit the current thread

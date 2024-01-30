@@ -12,7 +12,6 @@ int main()
     for (n = 0; n < nproc; n++)
     {
         pid = fork();
-        printf("PID is: %d \n", pid);
         if (pid < 0)
         {
             break;
