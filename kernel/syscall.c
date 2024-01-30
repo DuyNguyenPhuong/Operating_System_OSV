@@ -171,17 +171,26 @@ sys_spawn(void *arg)
     return p->pid;
 }
 
+/*
+ * Corresponds to int wait(int pid, int *wstatus);
+ *
+ * Suspend execution until a child process changes state (e.g., terminates).
+ *
+ * If pid is -1, wait for any child process.
+ * If wstatus is not NULL, store the exit status of the child in wstatus.
+ *
+ * A parent can only wait for the same child once.
+ *
+ * Return:
+ * On success, the PID of the child process that changed state.
+ * On failure:
+ *   ERR_FAULT - Address of wstatus is invalid.
+ *   ERR_CHILD - The caller does not have a child with the specified pid.
+ */
 // int wait(int pid, int *wstatus);
 static sysret_t
 sys_wait(void *arg)
 {
-    // for (;;)
-    // {
-    // }
-    // panic("unreacchable");
-
-    // kprintf("From sys\n");
-
     sysarg_t pid_arg, status_arg;
 
     kassert(fetch_arg(arg, 1, &pid_arg));
@@ -198,6 +207,13 @@ sys_wait(void *arg)
     return (sysret_t)proc_wait(pid, status);
 }
 
+/*
+ * Corresponds to void exit(int status);
+ *
+ * Terminate the calling process (e.g., halt it and reclaim its resources).
+ * The process will exit with the given status.
+ * Should never return.
+ */
 // void exit(int status);
 static sysret_t
 sys_exit(void *arg)
@@ -211,16 +227,8 @@ sys_exit(void *arg)
     proc_exit((int)exit_status);
 
     // proc_exit should never return
-    panic("sys_exit: proc_exit returned");
+    panic("sys_exit: proc_exit returned while it should not");
     return ERR_OK;
-
-    // kprintf("shutting down\n");
-    // shutdown();
-    // kprintf("oops still running\n");
-    // for (;;)
-    // {
-    // }
-    // panic("syscall exit not implemented");
 }
 
 // int getpid(void);

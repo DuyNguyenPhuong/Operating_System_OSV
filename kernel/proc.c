@@ -112,8 +112,6 @@ proc_init(char *name)
 
     p->parent = NULL;
 
-    list_init(&p->children);
-
     p->has_exited = False;
 
     p->exit_status = STATUS_ALIVE;
@@ -166,14 +164,12 @@ err_t proc_spawn(char *name, char **argv, struct proc **p)
     spinlock_release(&ptable_lock);
 
     // Add parent-child relationship
+    // If p is not init_proc
     if (p != &init_proc)
     {
         struct proc *parent = proc_current();
-        // kprintf("Hi1");
         kassert(parent);
-        // kprintf("Hi2");
         proc->parent = parent;
-        // list_append(&parent->children, &proc->proc_node);
     }
 
     // set up trapframe for a new process
@@ -270,8 +266,6 @@ proc_fork()
     // Add the relationship
 
     child->parent = parent;
-    // Dont use this
-    // list_append(&parent->children, &child->proc_node);
 
     // Update child thread
     struct thread *t;
@@ -325,6 +319,7 @@ bool proc_detach_thread(struct thread *t)
     return last_thread;
 }
 
+// Print the ptable without the lock (for debugging)
 static void
 ptable_dump_without_lock(void)
 {
@@ -337,6 +332,12 @@ ptable_dump_without_lock(void)
     kprintf("\n");
 }
 
+/*
+ * Close all the open file descriptors of the process
+ *
+ * process: the process with want to close
+ *
+ */
 void close_all_fds(struct proc *process)
 {
     if (process == NULL)
@@ -355,6 +356,17 @@ void close_all_fds(struct proc *process)
     }
 }
 
+/*
+ * Wait for a process to change state (e.g., terminate).
+ *
+ * If pid is ANY_CHILD, wait for any child process.
+ * If wstatus is not NULL, store the the exit status of the child in wstatus.
+ *
+ * Return:
+ * On success, the pid of the child process that changed state.
+ * On failure:
+ *   ERR_CHILD - The caller does not have a child with the specified pid.
+ */
 int proc_wait(pid_t pid, int *status)
 {
     struct proc *current_proc = proc_current();
@@ -363,11 +375,6 @@ int proc_wait(pid_t pid, int *status)
     int found_child = False;
     while (True)
     {
-        // if (current_proc->pid > 0)
-        // {
-        //     kprintf("[%d] In the while \n", current_proc->pid);
-        // }
-
         found_child = False;
         spinlock_acquire(&ptable_lock);
 
@@ -390,7 +397,6 @@ int proc_wait(pid_t pid, int *status)
                     int child_pid = child_proc->pid;
 
                     // Clean up the child process's resources
-
                     list_remove(&child_proc->proc_node);
                     close_all_fds(child_proc);
                     proc_free(child_proc);
@@ -407,6 +413,7 @@ int proc_wait(pid_t pid, int *status)
     }
 }
 
+/* Exit a process with a status */
 void proc_exit(int status)
 {
     struct thread *t = thread_current();
@@ -426,10 +433,8 @@ void proc_exit(int status)
     // Notify the parent process
     if (p->parent != NULL)
     {
-        // spinlock_acquire(&ptable_lock);
         p->exit_status = status;
         p->has_exited = True;
-        // spinlock_release(&ptable_lock);
     }
 
     // Exit the current thread
