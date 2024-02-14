@@ -45,8 +45,6 @@ pipe_t *pipe_alloc(void)
     pipe->read_file->oflag = FS_RDONLY;
     pipe->write_file->oflag = FS_WRONLY;
 
-    pipe->write_end_open = True;
-
     return pipe;
 }
 
@@ -77,7 +75,6 @@ void pipe_close(struct file *file)
     else if (file == pipe->write_file)
     {
         pipe->write_file = NULL;
-        pipe->write_end_open = False;
     }
 
     // If both ends are closed, free the pipe resources
