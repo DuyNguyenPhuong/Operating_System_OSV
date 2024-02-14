@@ -88,3 +88,20 @@ void bbq_free(BBQ *q)
 {
     kmem_cache_free(bbq_allocator, q);
 }
+
+bool bbq_is_empty(BBQ *q)
+{
+    spinlock_acquire(&q->lock);
+    bool empty = (q->front == q->next_empty);
+    spinlock_release(&q->lock);
+    return empty;
+}
+
+// Checks if the BBQ is full
+bool bbq_is_full(BBQ *q)
+{
+    spinlock_acquire(&q->lock);
+    bool full = ((q->next_empty - q->front) == MAX_BBQ_SIZE);
+    spinlock_release(&q->lock);
+    return full;
+}

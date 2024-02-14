@@ -1,6 +1,7 @@
 #include <kernel/bbq.h>
 #include <kernel/pipe.h>
 #include <kernel/console.h>
+#include <lib/errcode.h>
 
 struct file_operations pipe_ops = {
     .read = pipe_read,
@@ -44,6 +45,8 @@ pipe_t *pipe_alloc(void)
     pipe->read_file->oflag = FS_RDONLY;
     pipe->write_file->oflag = FS_WRONLY;
 
+    pipe->write_end_open = True;
+
     return pipe;
 }
 
@@ -60,29 +63,67 @@ void pipe_free(pipe_t *pipe)
     }
 }
 
+void pipe_close(struct file *file)
+{
+    // Cleanup for closing a pipe
+    pipe_t *pipe = (pipe_t *)file->info;
+    if (!pipe)
+        return;
+
+    if (file == pipe->read_file)
+    {
+        pipe->read_file = NULL;
+    }
+    else if (file == pipe->write_file)
+    {
+        pipe->write_file = NULL;
+        pipe->write_end_open = False;
+    }
+
+    // If both ends are closed, free the pipe resources
+    if (pipe->read_file == NULL && pipe->write_file == NULL)
+    {
+        bbq_free(pipe->buffer);
+        kfree(pipe);
+    }
+}
+
 ssize_t pipe_read(struct file *file, void *buf, size_t count, offset_t *ofs)
 {
     pipe_t *pipe = (pipe_t *)file->info;
     if (!pipe || !pipe->buffer)
-        return -1;
+        return -1; // Error if pipe or its buffer doesn't exist.
 
     char *buffer = (char *)buf;
-    char remove = bbq_remove(pipe->buffer);
-    buffer[0] = remove;
-    return (ssize_t)1;
+    ssize_t bytesRead = 0;
+    while (bytesRead < count && !bbq_is_empty(pipe->buffer))
+    {
+        buffer[bytesRead++] = bbq_remove(pipe->buffer);
+    }
+
+    // If the buffer is empty and the write end is closed, indicate EOF.
+    if (bytesRead == 0 && pipe->write_file == NULL)
+        return 0;
+
+    return bytesRead;
 }
 
 ssize_t pipe_write(struct file *file, const void *buf, size_t count, offset_t *ofs)
 {
-    pipe_t *pipe = (pipe_t *)file->info; // Cast file->info back to pipe_t
+    pipe_t *pipe = (pipe_t *)file->info;
     if (!pipe || !pipe->buffer)
-        return -1;
-    char *buffer = (char *)buf;
-    bbq_insert(pipe->buffer, buffer[0]);
-    return (ssize_t)1;
-}
+        return -1; // Error if pipe or its buffer doesn't exist.
 
-void pipe_close(struct file *file)
-{
-    // Cleanup for closing a pipe
+    // If the read end is closed, return an error.
+    if (pipe->read_file == NULL)
+        return ERR_END;
+
+    const char *buffer = (const char *)buf;
+    ssize_t bytesWritten = 0;
+    while (bytesWritten < count)
+    {
+        bbq_insert(pipe->buffer, buffer[bytesWritten++]);
+    }
+
+    return bytesWritten;
 }
