@@ -1,24 +1,26 @@
 #include <lib/test.h>
 
-int
-main()
+int main()
 {
     int fd, i;
     char buf[11];
 
     // open a valid file and try invalid read params
-    if ((fd = open("/README", FS_RDONLY, EMPTY_MODE)) < 0) {
+    if ((fd = open("/README", FS_RDONLY, EMPTY_MODE)) < 0)
+    {
         error("failed to open a valid file, return value was %d", fd);
     }
-
+    printf("Pass write 1 \n");
     // test bad fds for writes
-    if ((i = write(15, buf, 11)) != ERR_INVAL || 
-        (i = write(130, buf, 11)) != ERR_INVAL) {
+    if ((i = write(15, buf, 11)) != ERR_INVAL ||
+        (i = write(130, buf, 11)) != ERR_INVAL)
+    {
         error("write on a non existent file descriptor, return value was %d", i);
     }
-
+    printf("Pass write 2 \n");
     // try writing to a read only file descriptor
-    if ((i = write(fd, buf, 11)) > 0) {
+    if ((i = write(fd, buf, 11)) > 0)
+    {
         error("able to write to a file using a read only descriptor, return value was %d", i);
     }
 

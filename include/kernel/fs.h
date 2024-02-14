@@ -16,7 +16,8 @@
  * File system types
  */
 #define FS_TYPE_NAMELEN 16
-struct fs_type {
+struct fs_type
+{
     char fs_name[FS_TYPE_NAMELEN];
     Node node; // used by fs_type_list
     /*
@@ -68,22 +69,24 @@ struct fs_type *fs_get_fs(const char *name);
 /*
  * In-memory VFS superblock structure
  */
-struct super_block {
-    struct bdev *bdev; // Device descriptor
-    struct fs_type *s_fs_type; // File system type
-    inum_t s_root_inum; // Inode number of the root inode
+struct super_block
+{
+    struct bdev *bdev;               // Device descriptor
+    struct fs_type *s_fs_type;       // File system type
+    inum_t s_root_inum;              // Inode number of the root inode
     struct radix_tree_root s_icache; // Inode cache lookup table
-    unsigned int s_ref; // Reference counter.
-    state_t s_state; // State of in-memory superblock.
-    struct sleeplock s_lock; // Lock protecting superblock data structures.
-    void *s_fs_info; // Filesystem specific superblock info
-    struct super_operations *s_ops; // Superblock operations
+    unsigned int s_ref;              // Reference counter.
+    state_t s_state;                 // State of in-memory superblock.
+    struct sleeplock s_lock;         // Lock protecting superblock data structures.
+    void *s_fs_info;                 // Filesystem specific superblock info
+    struct super_operations *s_ops;  // Superblock operations
 };
 
 /*
  * Superblock operations
  */
-struct super_operations {
+struct super_operations
+{
     /*
      * Map journal logical block number to physical block number.
      */
@@ -191,10 +194,11 @@ struct super_block *root_sb;
  */
 
 // File types
-typedef enum {
-    FTYPE_DIR  = 1,
+typedef enum
+{
+    FTYPE_DIR = 1,
     FTYPE_FILE = 2,
-    FTYPE_DEV  = 3
+    FTYPE_DEV = 3
 } ftype_t;
 
 // File mode flag bits
@@ -202,27 +206,29 @@ typedef enum {
 #define FMODE_W 2 // Write permission
 #define FMODE_X 1 // Execute permission
 
-struct inode {
-    inum_t i_inum; // Inode number
-    struct super_block *sb; // Superblock
-    unsigned int i_ref; // Reference counter. Note that reference counter is protected by the superblock's s_lock
-    unsigned int i_nlink; // Number of links
-    ftype_t i_ftype; // File type
-    fmode_t i_mode; // File permission
-    size_t i_size; // File length in bytes
-    void *i_fs_info; // Filesystem specific inode info
-    state_t i_state; // State of in-memory inode
-    struct sleeplock i_lock; // Lock protecting inode data structures
+struct inode
+{
+    inum_t i_inum;                  // Inode number
+    struct super_block *sb;         // Superblock
+    unsigned int i_ref;             // Reference counter. Note that reference counter is protected by the superblock's s_lock
+    unsigned int i_nlink;           // Number of links
+    ftype_t i_ftype;                // File type
+    fmode_t i_mode;                 // File permission
+    size_t i_size;                  // File length in bytes
+    void *i_fs_info;                // Filesystem specific inode info
+    state_t i_state;                // State of in-memory inode
+    struct sleeplock i_lock;        // Lock protecting inode data structures
     struct inode_operations *i_ops; // Inode operations
     struct file_operations *i_fops; // File operations for this inode
-    struct memstore *store; // memstore to read pages from this inode
-    Node node; // List of dirty inodes or inodes with zero links (used by the cleanup thread)
+    struct memstore *store;         // memstore to read pages from this inode
+    Node node;                      // List of dirty inodes or inodes with zero links (used by the cleanup thread)
 };
 
 /*
  * Inode operations
  */
-struct inode_operations {
+struct inode_operations
+{
     /*
      * Create a new file inode in dir.
      *
@@ -438,19 +444,23 @@ err_t fs_rmdir(const char *pathname);
 /*
  * File structure
  */
-struct file {
-    int f_ref; // ref count for this file
-    int oflag; // open flag
-    struct inode *f_inode; // File inode
-    offset_t f_pos; // Current file offset
-    struct sleeplock f_lock; // Lock protecting file data structures
+struct file
+{
+    int f_ref;                     // ref count for this file
+    int oflag;                     // open flag
+    struct inode *f_inode;         // File inode
+    offset_t f_pos;                // Current file offset
+    struct sleeplock f_lock;       // Lock protecting file data structures
     struct file_operations *f_ops; // File operations
+
+    void *info;
 };
 
 /*
  * File statistics.
  */
-struct stat {
+struct stat
+{
     int ftype;
     int inode_num;
     size_t size;
@@ -460,7 +470,8 @@ struct stat {
  * Directory entry.
  */
 #define FNAME_LEN 28
-struct dirent {
+struct dirent
+{
     char name[FNAME_LEN];
     int inode_num;
 };
@@ -468,7 +479,8 @@ struct dirent {
 /*
  * File operations
  */
-struct file_operations {
+struct file_operations
+{
     /*
      * Read count number of bytes at file offset *ofs into a buffer buf. Update
      * ofs with the new offset.
@@ -518,10 +530,10 @@ struct file *fs_alloc_file(void);
 void fs_free_file(struct file *file);
 
 // fs_open_file flags
-#define FS_RDONLY    0x000
-#define FS_WRONLY    0x001
-#define FS_RDWR      0x002
-#define FS_CREAT     0x100
+#define FS_RDONLY 0x000
+#define FS_WRONLY 0x001
+#define FS_RDWR 0x002
+#define FS_CREAT 0x100
 
 /*
  * Open a file object associated with a pathname. Argument flags must include

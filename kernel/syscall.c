@@ -8,6 +8,7 @@
 #include <lib/stddef.h>
 #include <lib/string.h>
 #include <arch/asm.h>
+#include <kernel/pipe.h>
 
 // syscall handlers
 static sysret_t sys_fork(void *arg);
@@ -441,11 +442,13 @@ sys_write(void *arg)
     else
     {
         struct file *file = p->file_descriptors[fd];
+        kprintf("Get in file NULL \n");
         if (file == NULL)
         {
             // File descriptor is not valid
             return ERR_INVAL;
         }
+        kprintf("NOT Return \n");
 
         // Perform the write operation
         ssize_t bytes_written = fs_write_file(file, (void *)buf, (size_t)count, &(file->f_pos));
@@ -699,10 +702,68 @@ sys_dup(void *arg)
 }
 
 // int pipe(int* fds);
+/*
+ * Corresponds to int pipe(int *fds);
+ *
+ * Creates a pipe and two open file descriptors. The file descriptors
+ * are written to the array at fds, with fds[0] as the read end of the
+ * pipe and fds[1] as the write end of the pipe.
+ *
+ * Return:
+ * ERR_OK on success
+ * ERR_FAULT if fds address is invalid
+ * ERR_NOMEM if 2 new file descriptors are not available
+ */
 static sysret_t
 sys_pipe(void *arg)
 {
-    panic("syscall pipe not implemented");
+    // Validate the user-space pointer
+    sysarg_t fd_args;
+
+    kassert(fetch_arg(arg, 1, &fd_args));
+    int *fds = (int *)fd_args;
+    if (!validate_ptr(fds, sizeof(int) * 2))
+    {
+        return ERR_FAULT;
+    }
+
+    // Allocate the pipe structure
+    struct pipe *pipe = pipe_alloc();
+    if (pipe == NULL)
+    {
+        return ERR_NOMEM;
+    }
+
+    struct proc *p;
+    p = proc_current();
+    kassert(p);
+
+    // Allocate file descriptors for read and write ends
+    int read_fd = find_lowest_null_fd_from_0(p);
+    if (read_fd < 0)
+    {
+        kprintf("Fail 1");
+        pipe_free(pipe);
+        return ERR_NOMEM;
+    }
+    p->file_descriptors[read_fd] = pipe->read_file;
+
+    int write_fd = find_lowest_null_fd_from_0(p);
+    if (write_fd < 0)
+    {
+        kprintf("Fail 2");
+        pipe_free(pipe);
+        p->file_descriptors[read_fd] = NULL;
+        return ERR_NOMEM;
+    }
+    p->file_descriptors[write_fd] = pipe->write_file;
+
+    // Setup file descriptors in the user-space array
+    fds[0] = read_fd;
+    fds[1] = write_fd;
+
+    return ERR_OK;
+    // panic("syscall pipe not implemented");
 }
 
 // void sys_info(struct sys_info *info);
