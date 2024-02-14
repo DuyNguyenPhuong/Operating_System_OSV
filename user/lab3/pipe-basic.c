@@ -13,8 +13,6 @@ int main()
         error("pipe-basic: pipe() failed, return value was %d", ret);
     }
 
-    printf("Pass 1\n");
-
     // write a byte to the pipe
     if ((ret = write(fds[1], "!", 1)) != 1)
     {

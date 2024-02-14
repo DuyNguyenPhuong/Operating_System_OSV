@@ -3,13 +3,14 @@
 
 #include <kernel/types.h>
 #include <kernel/fs.h>
+#include <kernel/bbq.h>
 
 #define PIPE_BUFFER_SIZE 512 // Define the size of the pipe buffer
 
 // Define the pipe structure
 typedef struct pipe
 {
-    struct bbq *buffer;
+    BBQ *buffer;
     struct file *read_file;
     struct file *write_file;
     struct file_operations *pipe_ops;

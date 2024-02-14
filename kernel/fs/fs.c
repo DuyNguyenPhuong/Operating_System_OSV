@@ -843,21 +843,15 @@ fs_read_file(struct file *file, void *buf, size_t count, offset_t *ofs)
 ssize_t
 fs_write_file(struct file *file, const void *buf, size_t count, offset_t *ofs)
 {
-    kprintf("Join file write \n");
     struct super_block *sb;
-    kprintf("Join file write 1.5 \n");
     ssize_t ws = 0;
-    kprintf("Join file write 1.75 \n");
     if (file->f_inode)
     {
-        kprintf("Join file write 2 \n");
         sb = file->f_inode->sb;
         sb->s_ops->journal_begin_txn(sb);
     }
-    kprintf("Join file write 2.5 \n");
     if (file->oflag != FS_RDONLY)
     {
-        kprintf("Join file write 3 \n");
         ws = file->f_ops->write(file, buf, count, ofs);
     }
     if (file->f_inode)

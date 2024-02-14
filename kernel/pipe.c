@@ -1,5 +1,6 @@
 #include <kernel/bbq.h>
 #include <kernel/pipe.h>
+#include <kernel/console.h>
 
 struct file_operations pipe_ops = {
     .read = pipe_read,
@@ -13,7 +14,6 @@ pipe_t *pipe_alloc(void)
         return NULL;
 
     // Initialize the BBQ
-    pipe->buffer = kmalloc(sizeof(bbq_t));
     if (!pipe->buffer)
     {
         kfree(pipe);
@@ -21,18 +21,18 @@ pipe_t *pipe_alloc(void)
     }
 
     // Initialize the BBQ for the pipe's buffer
-    bbq_init(pipe->buffer);
-    pipe->read_file = kmalloc(sizeof(struct file));
-    pipe->write_file = kmalloc(sizeof(struct file));
+    pipe->buffer = bbq_init();
+    pipe->read_file = fs_alloc_file();
+    pipe->write_file = fs_alloc_file();
 
     if (!(pipe->read_file) || !(pipe->write_file))
     {
         // Cleanup in case of allocation failure
         if (pipe->read_file)
-            kfree(pipe->read_file);
+            fs_free_file(pipe->read_file);
         if (pipe->write_file)
-            kfree(pipe->write_file);
-        kfree(pipe);
+            fs_free_file(pipe->write_file);
+        pipe_free(pipe);
         return NULL; // Error handling
     }
 
@@ -54,7 +54,7 @@ void pipe_free(pipe_t *pipe)
         // Assuming bbq_free properly cleans up BBQ, including any spinlocks
         if (pipe->buffer)
         {
-            kfree(pipe->buffer); // Clean up the BBQ buffer
+            bbq_free(pipe->buffer); // Clean up the BBQ buffer
         }
         kfree(pipe); // Finally, free the pipe itself
     }
@@ -62,24 +62,24 @@ void pipe_free(pipe_t *pipe)
 
 ssize_t pipe_read(struct file *file, void *buf, size_t count, offset_t *ofs)
 {
-    pipe_t *pipe = (pipe_t *)file->info; // Assuming file->info points to our pipe structure
+    pipe_t *pipe = (pipe_t *)file->info;
     if (!pipe || !pipe->buffer)
-        return -1; // Error handling for invalid pipe
+        return -1;
 
-    // Call bbq_read to read data from the pipe's buffer to the user buffer
-    ssize_t bytes_read = bbq_read(pipe->buffer, buf, count);
-    return bytes_read; // Return the number of bytes read
+    char *buffer = (char *)buf;
+    char remove = bbq_remove(pipe->buffer);
+    buffer[0] = remove;
+    return (ssize_t)1;
 }
 
 ssize_t pipe_write(struct file *file, const void *buf, size_t count, offset_t *ofs)
 {
     pipe_t *pipe = (pipe_t *)file->info; // Cast file->info back to pipe_t
     if (!pipe || !pipe->buffer)
-        return -1; // Error handling for invalid pipe
-    kprintf("Join Write \n");
-    // Call bbq_write to write data from the user buffer to the pipe's buffer
-    ssize_t bytes_written = bbq_write(pipe->buffer, buf, count);
-    return bytes_written; // Return the number of bytes written
+        return -1;
+    char *buffer = (char *)buf;
+    bbq_insert(pipe->buffer, buffer[0]);
+    return (ssize_t)1;
 }
 
 void pipe_close(struct file *file)

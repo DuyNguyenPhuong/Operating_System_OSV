@@ -10,14 +10,12 @@ int main()
     {
         error("failed to open a valid file, return value was %d", fd);
     }
-    printf("Pass write 1 \n");
     // test bad fds for writes
     if ((i = write(15, buf, 11)) != ERR_INVAL ||
         (i = write(130, buf, 11)) != ERR_INVAL)
     {
         error("write on a non existent file descriptor, return value was %d", i);
     }
-    printf("Pass write 2 \n");
     // try writing to a read only file descriptor
     if ((i = write(fd, buf, 11)) > 0)
     {

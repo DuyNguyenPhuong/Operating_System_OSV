@@ -381,6 +381,11 @@ sys_read(void *arg)
         return ERR_FAULT;
     }
 
+    if (fd >= PROC_MAX_FILE)
+    {
+        return ERR_INVAL;
+    }
+
     // Cast argument to int
     int fd_int = (int)fd;
 
@@ -417,6 +422,7 @@ static sysret_t
 sys_write(void *arg)
 {
     // Fetch and validate the argument
+    // kprintf("Enter Write \n");
     sysarg_t fd, buf, count;
 
     kassert(fetch_arg(arg, 1, &fd));
@@ -427,6 +433,11 @@ sys_write(void *arg)
     if (!validate_ptr((void *)buf, (size_t)count))
     {
         return ERR_FAULT;
+    }
+
+    if (fd >= PROC_MAX_FILE)
+    {
+        return ERR_INVAL;
     }
 
     // Call the current process
@@ -442,13 +453,11 @@ sys_write(void *arg)
     else
     {
         struct file *file = p->file_descriptors[fd];
-        kprintf("Get in file NULL \n");
         if (file == NULL)
         {
             // File descriptor is not valid
             return ERR_INVAL;
         }
-        kprintf("NOT Return \n");
 
         // Perform the write operation
         ssize_t bytes_written = fs_write_file(file, (void *)buf, (size_t)count, &(file->f_pos));
@@ -556,6 +565,11 @@ sys_readdir(void *arg)
         return ERR_FAULT;
     }
 
+    if (fd >= PROC_MAX_FILE)
+    {
+        return ERR_INVAL;
+    }
+
     // Take current process
     struct proc *p;
     p = proc_current();
@@ -599,6 +613,11 @@ sys_fstat(void *arg)
 
     kassert(fetch_arg(arg, 1, &fd));
     kassert(fetch_arg(arg, 2, &stat_ptr));
+
+    if (fd < 0 || fd >= PROC_MAX_FILE)
+    {
+        return ERR_INVAL;
+    }
 
     // Cast sysarg_t to struct stat pointer
     struct stat *stat = (struct stat *)stat_ptr;
@@ -742,7 +761,6 @@ sys_pipe(void *arg)
     int read_fd = find_lowest_null_fd_from_0(p);
     if (read_fd < 0)
     {
-        kprintf("Fail 1");
         pipe_free(pipe);
         return ERR_NOMEM;
     }
@@ -751,7 +769,6 @@ sys_pipe(void *arg)
     int write_fd = find_lowest_null_fd_from_0(p);
     if (write_fd < 0)
     {
-        kprintf("Fail 2");
         pipe_free(pipe);
         p->file_descriptors[read_fd] = NULL;
         return ERR_NOMEM;

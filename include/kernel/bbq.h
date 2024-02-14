@@ -1,35 +1,28 @@
-#ifndef _BBQ_H_
-#define _BBQ_H_
+// Try adding this in include/kernel/
 
-#include <kernel/types.h>
-#include <kernel/console.h>
-#include <kernel/proc.h>
-#include <kernel/kmalloc.h>
-#include <kernel/thread.h>
-#include <kernel/list.h>
-#include <kernel/fs.h>
-#include <kernel/vpmap.h>
-#include <arch/elf.h>
-#include <arch/trap.h>
-#include <arch/mmu.h>
-#include <lib/errcode.h>
-#include <lib/stddef.h>
-#include <lib/string.h>
+#ifndef __BBQ_H__
+#define __BBQ_H__
 
-#define BBQ_SIZE 512 // Buffer size
+#include <kernel/synch.h> // this would be something you could actually add to osv
 
-// Bounded Buffer Queue
-typedef struct bbq
+#define MAX_BBQ_SIZE 512
+
+typedef struct
 {
-    char buffer[BBQ_SIZE];
-    unsigned int head;
-    unsigned int tail;
-    unsigned int count;
+    // Synchronization variables
     struct spinlock lock;
-} bbq_t;
+    struct condvar item_added;
+    struct condvar item_removed;
 
-void bbq_init(bbq_t *bbq);
-ssize_t bbq_write(bbq_t *bbq, const char *data, size_t size);
-ssize_t bbq_read(bbq_t *bbq, char *data, size_t size);
+    // State variables
+    char items[MAX_BBQ_SIZE];
+    int front;
+    int next_empty;
+} BBQ;
 
-#endif // _BBQ_H_
+BBQ *bbq_init();
+void bbq_free(BBQ *q);
+void bbq_insert(BBQ *q, char item);
+char bbq_remove(BBQ *q);
+
+#endif // __BBQ_H__
