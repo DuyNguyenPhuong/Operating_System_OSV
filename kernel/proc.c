@@ -398,7 +398,6 @@ int proc_wait(pid_t pid, int *status)
 
                     // Clean up the child process's resources
                     list_remove(&child_proc->proc_node);
-                    close_all_fds(child_proc);
                     proc_free(child_proc);
                     spinlock_release(&ptable_lock);
                     return child_pid;
@@ -426,6 +425,8 @@ void proc_exit(int status)
     t->proc = NULL;
     vpmap_load(kas->vpmap);
     as_destroy(&p->as);
+
+    close_all_fds(p);
 
     // release process's cwd
     fs_release_inode(p->cwd);
