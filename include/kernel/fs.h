@@ -452,8 +452,7 @@ struct file
     offset_t f_pos;                // Current file offset
     struct sleeplock f_lock;       // Lock protecting file data structures
     struct file_operations *f_ops; // File operations
-
-    void *info;
+    void *info;                    // Add void info for pipe
 };
 
 /*
