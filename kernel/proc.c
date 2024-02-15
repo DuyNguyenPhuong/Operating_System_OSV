@@ -426,6 +426,7 @@ void proc_exit(int status)
     vpmap_load(kas->vpmap);
     as_destroy(&p->as);
 
+    // Close all the file
     close_all_fds(p);
 
     // release process's cwd

@@ -3,6 +3,7 @@
 #include <kernel/console.h>
 #include <lib/errcode.h>
 
+// Define the pipe operations
 struct file_operations pipe_ops = {
     .read = pipe_read,
     .write = pipe_write,
@@ -21,6 +22,7 @@ pipe_t *pipe_alloc(void)
         return NULL;
     }
 
+    // Initialize the buffer and allocate the file
     pipe->buffer = bbq_init();
     pipe->read_file = fs_alloc_file();
     pipe->write_file = fs_alloc_file();
@@ -36,6 +38,7 @@ pipe_t *pipe_alloc(void)
         return NULL; // Error handling
     }
 
+    // Set the info and file operations
     pipe->read_file->f_ops = &pipe_ops;
     pipe->write_file->f_ops = &pipe_ops;
     pipe->read_file->info = pipe;
@@ -68,11 +71,13 @@ void pipe_close(struct file *file)
     if (!pipe)
         return;
 
+    // Close read file
     if (file == pipe->read_file)
     {
         pipe->read_file = NULL;
         file->info = NULL;
     }
+    // Close write file
     else if (file == pipe->write_file)
     {
         pipe->write_file = NULL;
@@ -92,6 +97,7 @@ ssize_t pipe_read(struct file *file, void *buf, size_t count, offset_t *ofs)
     // If the write file is open, read up to the count
     if (pipe->write_file != NULL)
     {
+        // Remove bytes up to the count
         while (bytesRead < count)
         {
             buffer[bytesRead++] = bbq_remove(pipe->buffer);
@@ -122,6 +128,7 @@ ssize_t pipe_write(struct file *file, const void *buf, size_t count, offset_t *o
 
     const char *buffer = (const char *)buf;
     ssize_t bytesWritten = 0;
+    // Write new bytes up to the count
     while (bytesWritten < count)
     {
         bbq_insert(pipe->buffer, buffer[bytesWritten++]);
