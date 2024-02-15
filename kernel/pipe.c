@@ -70,10 +70,12 @@ void pipe_close(struct file *file)
 
     if (file == pipe->read_file)
     {
+        pipe->read_file->info = NULL;
         pipe->read_file = NULL;
     }
     else if (file == pipe->write_file)
     {
+        pipe->write_file->info = NULL;
         pipe->write_file = NULL;
     }
 
@@ -93,16 +95,38 @@ ssize_t pipe_read(struct file *file, void *buf, size_t count, offset_t *ofs)
 
     char *buffer = (char *)buf;
     ssize_t bytesRead = 0;
-    while (bytesRead < count && !bbq_is_empty(pipe->buffer))
+    // while (bytesRead < count && !bbq_is_empty(pipe->buffer))
+    // {
+    //     buffer[bytesRead++] = bbq_remove(pipe->buffer);
+    // }
+
+    // // If the buffer is empty and the write end is closed, indicate EOF.
+    // if (bytesRead == 0 && pipe->write_file == NULL)
+    //     return 0;
+
+    if (pipe->write_file != NULL)
     {
-        buffer[bytesRead++] = bbq_remove(pipe->buffer);
+        // while (bytesRead < count)
+        // {
+        //     kprintf("Hi 1\n");
+        //     buffer[bytesRead++] = bbq_remove(pipe->buffer);
+        // }
+        // return bytesRead;
+        for (int i = 0; i < count; i++)
+        {
+            buffer[bytesRead++] = bbq_remove(pipe->buffer);
+        }
+        return count;
     }
-
-    // If the buffer is empty and the write end is closed, indicate EOF.
-    if (bytesRead == 0 && pipe->write_file == NULL)
-        return 0;
-
-    return bytesRead;
+    else
+    {
+        while (bytesRead < count && !bbq_is_empty(pipe->buffer))
+        {
+            kprintf("Hi 2\n");
+            buffer[bytesRead++] = bbq_remove(pipe->buffer);
+        }
+        return bytesRead;
+    }
 }
 
 ssize_t pipe_write(struct file *file, const void *buf, size_t count, offset_t *ofs)
