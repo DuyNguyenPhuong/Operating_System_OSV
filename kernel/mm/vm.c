@@ -274,6 +274,8 @@ err_t memregion_extend(struct memregion *region, ssize_t size, vaddr_t *old_boun
         return ERR_OK;
     }
 
+    vaddr_t new_end = region->end + size;
+
     // Check for negative-sized regions after extension.
     if (region->end + size < region->start)
     {
@@ -281,10 +283,32 @@ err_t memregion_extend(struct memregion *region, ssize_t size, vaddr_t *old_boun
         return ERR_VM_INVALID;
     }
 
-    // Checks for overlap with other memory regions
+    struct proc *current_process = proc_current();
+    kassert(current_process);
 
-    *old_bound = region->end; // Save the current end of the region.
-    region->end += size;      // Adjust the region size.
+    // Go through all regions
+    for (Node *n = list_begin(&current_process->as.regions); n != list_end(&current_process->as.regions); n = list_next(n))
+    {
+        // kprintf("In the loop\n");
+        struct memregion *current_region = list_entry(n, struct memregion, as_node);
+
+        // Skip the region being checked
+        if (current_region == region)
+            continue;
+
+        // Check for overlap
+        if ((current_region->start < new_end && current_region->start >= region->start) ||
+            (region->start < current_region->end && region->start >= current_region->start))
+        {
+            // spinlock_release(&current_process->as.as_lock);
+            return ERR_VM_BOUND;
+        }
+    }
+
+    // Save old_bound
+    *old_bound = region->end;
+    // Adjust the region size
+    region->end += size;      
 
     return ERR_OK;
 }
