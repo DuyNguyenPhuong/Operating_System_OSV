@@ -20,58 +20,54 @@ void handle_page_fault(vaddr_t fault_addr, int present, int write, int user)
     struct proc *curproc = proc_current();
     kassert(curproc);
 
-    // Check valid access within the stack region.
+    // Check valid access within the stack region
     vaddr_t stack_lower_bound = USTACK_UPPERBOUND - (pg_size * USTACK_PAGES);
     if (user && fault_addr >= stack_lower_bound && fault_addr < USTACK_UPPERBOUND)
     {
-        if (!present || (write && !present))
+        // Allocate and map a new page for stack growth
+        paddr_t paddr;
+        if (pmem_alloc(&paddr) != ERR_OK)
         {
-            // Allocate and map a new page for stack growth
-            paddr_t paddr;
-            if (pmem_alloc(&paddr) != ERR_OK)
-            {
-                proc_exit(-1);
-                return;
-            }
-
-            // Zero the page
-            memset((void *)kmap_p2v(paddr), 0, pg_size);
-
-            // Set the offset bit to 0s
-            vaddr_t aligned_fault_addr = fault_addr & ~(pg_size - 1);
-            if (vpmap_map(curproc->as.vpmap, aligned_fault_addr, paddr, 1, MEMPERM_URW) != ERR_OK)
-            {
-                pmem_free(paddr); // Cleanup.
-                proc_exit(-1);
-                return;
-            }
+            proc_exit(-1);
             return;
         }
+
+        // Zero the page
+        memset((void *)kmap_p2v(paddr), 0, pg_size);
+
+        // Set the offset bit to 0s
+        vaddr_t aligned_fault_addr = fault_addr & ~(pg_size - 1);
+        if (vpmap_map(curproc->as.vpmap, aligned_fault_addr, paddr, 1, MEMPERM_URW) != ERR_OK)
+        {
+            pmem_free(paddr);
+            proc_exit(-1);
+            return;
+        }
+        return;
     }
     else if (user && fault_addr >= curproc->as.heap->start && fault_addr < curproc->as.heap->end)
     {
         // The fault address is within the heap region.
-        if (!present)
+        // if (!present)
+        // {
+        paddr_t paddr;
+        if (pmem_alloc(&paddr) != ERR_OK)
         {
-            paddr_t paddr;
-            if (pmem_alloc(&paddr) != ERR_OK)
-            {
-                proc_exit(-1);
-                return;
-            }
-
-            memset((void *)kmap_p2v(paddr), 0, pg_size);
-
-            // Align the fault address to the page boundary.
-            vaddr_t aligned_fault_addr = fault_addr & ~(pg_size - 1);
-            if (vpmap_map(curproc->as.vpmap, aligned_fault_addr, paddr, 1, MEMPERM_URW) != ERR_OK)
-            {
-                pmem_free(paddr);
-                proc_exit(-1);
-                return;
-            }
+            proc_exit(-1);
             return;
         }
+
+        memset((void *)kmap_p2v(paddr), 0, pg_size);
+
+        // Set the offset bit to 0s
+        vaddr_t aligned_fault_addr = fault_addr & ~(pg_size - 1);
+        if (vpmap_map(curproc->as.vpmap, aligned_fault_addr, paddr, 1, MEMPERM_URW) != ERR_OK)
+        {
+            pmem_free(paddr);
+            proc_exit(-1);
+            return;
+        }
+        return;
     }
 
     if (user)

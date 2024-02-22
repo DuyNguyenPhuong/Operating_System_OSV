@@ -677,10 +677,10 @@ sys_sbrk(void *arg)
 
     vaddr_t old_heap_end = heap_region->end;
 
-    // Extend the heap region, ignoring the return value.
+    // Extend the heap region (ignore the return value)
     memregion_extend(heap_region, increment, &old_heap_end);
 
-    // Return the old break (heap end) to the caller.
+    // Return the old end address
     return (sysret_t)old_heap_end;
 }
 
