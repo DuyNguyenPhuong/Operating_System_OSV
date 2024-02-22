@@ -554,8 +554,9 @@ err_t stack_setup(struct proc *p, char **argv, vaddr_t *ret_stackptr)
         return err;
     }
     memset((void *)kmap_p2v(paddr), 0, pg_size);
+
     // create memregion for stack
-    if (as_map_memregion(&p->as, stacktop, pg_size, MEMPERM_URW, NULL, 0, False) == NULL)
+    if (as_map_memregion(&p->as, stacktop - 9 * pg_size, pg_size * 10, MEMPERM_URW, NULL, 0, False) == NULL)
     {
         err = ERR_NOMEM;
         goto error;

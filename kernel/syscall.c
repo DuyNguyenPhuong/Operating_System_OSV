@@ -663,7 +663,25 @@ sys_fstat(void *arg)
 static sysret_t
 sys_sbrk(void *arg)
 {
-    panic("syscall sbrk not implemented");
+    sysarg_t increment_arg;
+
+    kassert(fetch_arg(arg, 1, &increment_arg));
+
+    ssize_t increment = (ssize_t)increment_arg;
+
+    // Get current process
+    struct proc *current_process = proc_current();
+    kassert(current_process);
+
+    struct memregion *heap_region = current_process->as.heap;
+
+    vaddr_t old_heap_end = heap_region->end;
+
+    // Extend the heap region, ignoring the return value.
+    memregion_extend(heap_region, increment, &old_heap_end);
+
+    // Return the old break (heap end) to the caller.
+    return (sysret_t)old_heap_end;
 }
 
 // void memifo();
