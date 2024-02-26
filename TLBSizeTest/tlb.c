@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
+// #include <bits/time.h>
+// #include <linux/time.h>
 
 #define PAGESIZE sysconf(_SC_PAGESIZE)
 
@@ -14,20 +16,15 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printf("Page size is: %ld \n", PAGESIZE);
-
     int numPages = atoi(argv[1]);
-
-    printf("Num page is: %d \n", numPages);
     int numTrials = atoi(argv[2]);
     int jump = PAGESIZE / sizeof(int);
-    struct timeval start, end;
-    long totalTime = 0;
+    struct timespec start, end;
+    long long totalTime = 0;
 
     int *a = (int *)malloc(numPages * PAGESIZE);
     if (!a)
     {
-        free(a);
         perror("Memory allocation failed");
         return 1;
     }
@@ -35,22 +32,21 @@ int main(int argc, char *argv[])
     // Touch each page in the array
     for (int trial = 0; trial < numTrials; ++trial)
     {
-        gettimeofday(&start, NULL);
+        clock_gettime(CLOCK_MONOTONIC, &start);
         for (int i = 0; i < numPages * jump; i += jump)
         {
             a[i] += 1;
         }
-        gettimeofday(&end, NULL);
+        clock_gettime(CLOCK_MONOTONIC, &end);
 
-        totalTime += (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
+        totalTime += (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
     }
-    printf("Print a[0]: %d \n", a[0]);
-    printf("Average access time: %f microseconds\n", (double)totalTime / (numTrials * numPages));
+
+    // Use a[0] to make sure the compiler doesn't optimize away the loop
+    int dummny = a[0] + 1;
+    double averageAccessTime = (double)totalTime / (numTrials * numPages);
+    printf("%d,%d,%.2f\n", numPages, numTrials, averageAccessTime);
 
     free(a);
     return 0;
 }
-
-// Note:
-// Use: clock get time
-// Use script to run the test: echo >> hello.txt
