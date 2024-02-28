@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-// #include <bits/time.h>
-// #include <linux/time.h>
 
 #define PAGESIZE sysconf(_SC_PAGESIZE)
 
@@ -22,8 +20,8 @@ int main(int argc, char *argv[])
     struct timespec start, end;
     long long totalTime = 0;
 
-    int *a = (int *)malloc(numPages * PAGESIZE);
-    if (!a)
+    int *array = (int *)malloc(numPages * PAGESIZE);
+    if (!array)
     {
         perror("Memory allocation failed");
         return 1;
@@ -35,18 +33,18 @@ int main(int argc, char *argv[])
         clock_gettime(CLOCK_MONOTONIC, &start);
         for (int i = 0; i < numPages * jump; i += jump)
         {
-            a[i] += 1;
+            array[i] += 1;
         }
         clock_gettime(CLOCK_MONOTONIC, &end);
 
-        totalTime += (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
+        totalTime += (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     }
 
     // Use a[0] to make sure the compiler doesn't optimize away the loop
-    int dummny = a[0] + 1;
+    int dummny = array[0] + 1;
     double averageAccessTime = (double)totalTime / (numTrials * numPages);
     printf("%d,%d,%.2f\n", numPages, numTrials, averageAccessTime);
 
-    free(a);
+    free(array);
     return 0;
 }

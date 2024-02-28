@@ -9,7 +9,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Header for the CSV file
+# CSV file's Header
 echo "Number Of Page,Number Of Trial,Average Time Access (ns)" > results.csv
 
 # Test List
