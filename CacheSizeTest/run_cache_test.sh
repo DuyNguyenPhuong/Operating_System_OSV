@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compile the C program
-gcc cache.c -o cache
+gcc cache.c -o cache -lrt
 
 # Check if the compilation is success
 if [ $? -ne 0 ]; then
@@ -13,9 +13,9 @@ fi
 echo "Array Size (kB),Average Time Access (ns)" > cache_results.csv
 
 # Run Test
-echo "Running test for arraySize=$arraySize, numTrials=$numTrials..."
+echo "Running test for arraySize from 1kB to 128 MB, numTrials=10..."
 ./cache >> cache_results.csv
-
+rm -f cache
 echo "Tests completed. Results saved to cache_results.csv."
 
 # To Run:
@@ -26,3 +26,5 @@ echo "Tests completed. Results saved to cache_results.csv."
 # L1 Cache: 0.5 to 1.5 nanoseconds
 # L2 Cache: 3 to 10 nanoseconds.
 # L3 Cache: 10 to 40 nanoseconds
+
+#objdump -d cache > assembly.s
