@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Compile the C program
-gcc cache.c -o cache -lrt
+gcc cache.c -O0 -o cache
 
 # Check if the compilation is success
 if [ $? -ne 0 ]; then
