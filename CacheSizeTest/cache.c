@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sched.h>
 #include <unistd.h>
+#include "accessArray.h"
 
 #define NUM_TRIALS 10000         // Set Number Trial
 #define NUM_INT_IN_CACHE_LINE 16 // Cache size is 64B so there is 16 int in a cache line
@@ -19,32 +20,9 @@
 // #define MAX_SIZE 1024 * 1024 * 50 // End up to 50 MB
 // #define STEP_SIZE 1024 * 1024 // Step size if we want to list all size
 
-void accessArray(int *array, int numElements, int random_increment)
-{
-    // Access step to with a step of cache line size
-    // Because we don't want to access the element in the same cache line
-    // Then we add a random number to each element
-    for (int i = 0; i < numElements; i += NUM_INT_IN_CACHE_LINE)
-    {
-        array[i] += random_increment;
-    }
-}
-
 int main()
 {
-    // This code is to set CPU Affinity
-    // This code is reference by https://stackoverflow.com/questions/280909/how-to-set-cpu-affinity-for-a-process-from-c-or-c-in-linux
-    cpu_set_t mask;
-    CPU_ZERO(&mask);
-    // Bind process to CPU 0
-    CPU_SET(0, &mask);
-
-    // Set CPU affinity
-    if (sched_setaffinity(0, sizeof(mask), &mask) == -1)
-    {
-        perror("sched_setaffinity failed");
-        exit(EXIT_FAILURE);
-    }
+    set_cpu_affinity();
 
     // Time variable to keep track of time
     struct timespec start, end;
