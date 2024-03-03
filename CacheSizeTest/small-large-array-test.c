@@ -4,12 +4,10 @@
 #include <time.h>
 #include <sched.h>
 #include <unistd.h>
-#include "accessArray.h"
-// #include "lib/test.h"
+#include "helperMeasurement.h"
 
-#define NUM_TRIALS 100
-#define NUM_INT_IN_CACHE_LINE 16
-#define ONE_BILLION 1000000000LL
+// #define NUM_INT_IN_CACHE_LINE 16
+// #define ONE_BILLION 1000000000LL
 
 // Main function to compare access times
 int main()
