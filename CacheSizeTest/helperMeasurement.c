@@ -84,8 +84,9 @@ long long calculate_num_elements(long long size)
 }
 
 /*
-Malloc the array and initialize each element of the array
-with a random number. This will reduce the complier optimization
+Malloc the array and don't initialize the array
+Because we don't want any element save in the cache yet
+
 
 Parameter:
 - array: the array we malloc and intilize
@@ -97,7 +98,7 @@ Return:
 the function returns 0 (EXIT_SUCCESS).
 - Else, the function returns EXIT_FAILURE.
 */
-int malloc_and_randomly_initialize_array(int **array, long long size, long long numElements)
+int malloc_and_no_initialize_array(int **array, long long size, long long numElements)
 {
     // Malloc an array
     *array = (int *)malloc(size);
@@ -105,16 +106,6 @@ int malloc_and_randomly_initialize_array(int **array, long long size, long long 
     {
         perror("Memory allocation failed");
         return EXIT_FAILURE;
-    }
-
-    // Create random number
-    srand(time(NULL));
-    int randomInitializeNumber = rand();
-
-    // Initialized the array
-    for (int i = 0; i < numElements; i++)
-    {
-        (*array)[i] = i * (randomInitializeNumber % 15) + 1;
     }
 
     return EXIT_SUCCESS;

@@ -19,8 +19,8 @@ rm -f cache
 echo "Tests completed. Results saved to cache_results.csv."
 
 # To Run:
-# chmod +x run_cache_test.sh
-# ./run_cache_test.sh
+# chmod +x run_cache.sh
+# ./run_cache.sh
 
 
 # L1 Cache: 0.5 to 1.5 nanoseconds

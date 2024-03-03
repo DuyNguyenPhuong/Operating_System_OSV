@@ -11,6 +11,7 @@
 
 int main()
 {
+    // Set PCU affinity
     set_cpu_affinity();
 
     // Dummy integer to print at the end to prevent complier optimization
@@ -22,7 +23,7 @@ int main()
     // Malloc the array and initialize each element of the array
     // with a random number. This will reduce the complier optimization
     int *array;
-    if (malloc_and_randomly_initialize_array(&array, TEST_SIZE, numElements))
+    if (malloc_and_no_initialize_array(&array, TEST_SIZE, numElements))
         return EXIT_FAILURE;
 
     // Save the initial value for later test

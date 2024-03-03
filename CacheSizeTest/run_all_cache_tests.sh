@@ -50,5 +50,5 @@ done
 echo "Number of passed tests: $passed_tests / $total_tests"
 
 
-# chmod +x run_all_tests.sh
-# ./run_all_tests.sh
+# chmod +x run_all_cache_tests.sh
+# ./run_all_cache_tests.sh

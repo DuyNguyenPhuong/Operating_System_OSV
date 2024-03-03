@@ -30,10 +30,10 @@ int main()
         // Set number of element in a array
         long long numElements = calculate_num_elements(size);
 
-        // Malloc the array and initialize each element of the array
-        // with a random number. This will reduce the complier optimization
+        // Malloc the array and no initilization. I will explain why we
+        // don't initialized in the paper
         int *array;
-        if (malloc_and_randomly_initialize_array(&array, size, numElements))
+        if (malloc_and_no_initialize_array(&array, size, numElements))
             return EXIT_FAILURE;
 
         srand(time(NULL));
