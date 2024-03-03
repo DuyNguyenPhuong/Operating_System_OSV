@@ -3,63 +3,61 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include "helperTLB.h"
 
-#define PAGESIZE sysconf(_SC_PAGESIZE)
+#define PAGESIZE sysconf(_SC_PAGESIZE) // Page Size is 4096
 
 int main(int argc, char *argv[])
 {
     // Check the input
     if (argc != 3)
     {
-        printf("Wrong input. It should be: %s <numPages> <numTrials>\n", argv[0]);
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    // printf("Page Size is: %ld\n", PAGESIZE); // 4096 // 4kB
-
-    long long numPages = atoi(argv[1]);
-    long long numTrials = atoi(argv[2]);
-    long long jump = PAGESIZE / sizeof(int);
-
-    // printf("Jump Size is: %d\n", jump);
-
-    // printf("Array Size is: %ld\n", numPages * PAGESIZE);
-    struct timespec start, end;
-    long long totalTime = 0;
-
-    int *array = (int *)malloc(numPages * PAGESIZE);
-    if (!array)
+    // Parse argument to values
+    char *endptr;
+    long long numPages = strtoll(argv[1], &endptr, 10);
+    // Check for non-numeric input and ensure positive value
+    if (*endptr != '\0' || numPages <= 0)
     {
-        perror("Memory allocation failed");
-        return 1;
+        return EXIT_FAILURE;
     }
+
+    long long numTrials = strtoll(argv[2], &endptr, 10);
+    // Check for non-numeric input and ensure positive value
+    if (*endptr != '\0' || numTrials <= 0)
+    {
+        return EXIT_FAILURE;
+    }
+
+    // Set CPU affinity so that we only run on 1 CPU
+    set_cpu_affinity();
+
+    // Parse argument to values
+    // long long numPages = atoi(argv[1]);
+    // long long numTrials = atoi(argv[2]);
+
+    // Calculate jump so that we jump to different page everytime
+    // long long jump = PAGESIZE / sizeof(int);
+    long long jump = calculate_jump_size_to_different_page(PAGESIZE);
 
     long long sizeInByte = numPages * PAGESIZE;
-    long long numElements = sizeInByte / 4;
+    long long numElements = sizeInByte / sizeof(int);
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    // Malloc the array. And we won't initilize the array, detailed in the paper
+    int *array;
+    if (malloc_and_no_initialize_array_from_number_of_page(&array, numPages, PAGESIZE, numElements))
+        return EXIT_FAILURE;
 
-    // Touch each page in the array
-    for (int trial = 0; trial < numTrials; ++trial)
-    {
-        for (int i = 0; i < numElements; i += jump)
-        {
-            array[i] += 1;
-        }
-    }
-    clock_gettime(CLOCK_MONOTONIC, &end);
+    double averageAccessTime = measure_average_access_time_with_step(array, numElements, jump);
 
-    totalTime = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
-
-    // printf("Tong total Time is %lld \n", totalTime);
-
-    // Use a[0] to make sure the compiler doesn't optimize away the loop
-    int dummny = array[0] + 1;
-    double averageAccessTime = (double)totalTime / (numTrials * numElements / jump);
-
-    // printf("Total Access Time %lld \n", numTrials * numElements / jump);
     printf("%lld,%lld,%.2f\n", numPages, numTrials, averageAccessTime);
 
+    // Dummy integer to print at the end to prevent complier optimization
+    // Use a[0] to make sure the compiler doesn't optimize away the loop
+    int dummny = array[0] + 1;
+
     free(array);
-    return 0;
+    return EXIT_SUCCESS;
 }
