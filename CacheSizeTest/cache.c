@@ -7,17 +7,27 @@
 #include "helperMeasurement.h"
 
 // This definition is to comparing L1 and L2 Cache
-#define MIN_SIZE 1024      // Start with 1KB
-#define MAX_SIZE 1024 * 64 // End up to 64KB
-#define STEP_SIZE 1024     // Step size if we want to list all size
+// #define MIN_SIZE 1024      // Start with 1KB
+// #define MAX_SIZE 1024 * 64 // End up to 64KB
+// #define STEP_SIZE 1024     // Step size if we want to list all size
 
 // This definition is to comparing L2 and L3 Cache
-// #define MIN_SIZE 1024 * 1024      // Start with 1 MB
-// #define MAX_SIZE 1024 * 1024 * 50 // End up to 50 MB
-// #define STEP_SIZE 1024 * 1024     // Step size if we want to list all size
+#define MIN_SIZE 1024 * 1024      // Start with 1 MB
+#define MAX_SIZE 1024 * 1024 * 50 // End up to 50 MB
+#define STEP_SIZE 1024 * 1024     // Step size if we want to list all size
 
-int main()
+int main(int argc, char *argv[])
 {
+
+    // Check the input
+    if (argc != 2)
+    {
+        printf("Wrong input. It should be: %s <size>\n", argv[0]);
+        return 1;
+    }
+
+    long long size = atoi(argv[1]);
+
     // Set CPU affinity so that we only run on 1 CPU
     set_cpu_affinity();
 
@@ -25,35 +35,35 @@ int main()
     int dummy = 0;
 
     // Go through each size of array from min to max size
-    for (long long size = MIN_SIZE; size <= MAX_SIZE; size += STEP_SIZE)
-    {
-        // Set number of element in a array
-        long long numElements = calculate_num_elements(size);
+    // for (long long size = MIN_SIZE; size <= MAX_SIZE; size += STEP_SIZE)
+    // {
+    // Set number of element in a array
+    long long numElements = calculate_num_elements(size);
 
-        // Malloc the array and initialize each element of the array
-        // with a random number. This will reduce the complier optimization
-        int *array;
-        if (malloc_and_randomly_initialize_array(&array, size, numElements))
-            return EXIT_FAILURE;
+    // Malloc the array and initialize each element of the array
+    // with a random number. This will reduce the complier optimization
+    int *array;
+    if (malloc_and_randomly_initialize_array(&array, size, numElements))
+        return EXIT_FAILURE;
 
-        srand(time(NULL));
-        // Random Number to Increment in the array
-        int randomIncrementNumber = rand();
+    srand(time(NULL));
+    // Random Number to Increment in the array
+    int randomIncrementNumber = rand();
 
-        // Measure Average Access Time of Each Element in nanosecond
-        double averageAccessTime = measure_average_access_time(array, numElements, randomIncrementNumber);
+    // Measure Average Access Time of Each Element in nanosecond
+    double averageAccessTime = measure_average_access_time(array, numElements, randomIncrementNumber);
 
-        // Random number to access to calculate dummy to reduce complier optimitzation
-        int randomAccessNumber = rand();
-        dummy += array[0] + array[randomAccessNumber % (numElements)];
+    // Random number to access to calculate dummy to reduce complier optimitzation
+    int randomAccessNumber = rand();
+    dummy += array[0] + array[randomAccessNumber % (numElements)];
 
-        // Print the result to CSV file using a bash script
-        printf("%.2f,%.2f\n", (double)size / 1024, averageAccessTime);
+    // Print the result to CSV file using a bash script
+    printf("%.2f,%.2f\n", (double)size / 1024, averageAccessTime);
 
-        free(array);
-    }
+    free(array);
+    // }
 
-    printf("Dummy output to prevent complier optimization: %d\n", dummy);
+    // printf("Dummy output to prevent complier optimization: %d\n", dummy);
 
     return 0;
 }
