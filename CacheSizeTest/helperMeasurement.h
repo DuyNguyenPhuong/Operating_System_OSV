@@ -1,7 +1,7 @@
 #ifndef HELPERMEASUREMENT_H
 #define HELPERMEASUREMENT_H
 
-#define NUM_TRIALS 1000          // Set Number Trial
+#define NUM_TRIALS 100           // Set Number Trial
 #define NUM_INT_IN_CACHE_LINE 16 // Cache size is 64B so there is 16 int in a cache line
 #define ONE_BILLION 1000000000LL // Set one Billion
 
