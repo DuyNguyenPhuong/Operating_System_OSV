@@ -11,7 +11,7 @@
 // Then we add a random number to each element
 void accessArray(int *array, int numElements, int random_increment)
 {
-    for (int i = 0; i < numElements; i += NUM_INT_IN_CACHE_LINE)
+    for (int i = 0; i < numElements; i += JUMP)
     {
         array[i] += random_increment;
     }
@@ -70,7 +70,7 @@ double measure_average_access_time(int *array, long long numElements, int random
     long long elapsedTime = (end.tv_sec - start.tv_sec) * ONE_BILLION + (end.tv_nsec - start.tv_nsec);
 
     // Calculate the total access time
-    long long totalAccessTime = NUM_TRIALS * numElements / NUM_INT_IN_CACHE_LINE;
+    long long totalAccessTime = NUM_TRIALS * numElements / JUMP;
 
     return (double)elapsedTime / totalAccessTime;
 }

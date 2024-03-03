@@ -7,14 +7,14 @@
 #include "helperMeasurement.h"
 
 // This definition is to comparing L1 and L2 Cache
-#define MIN_SIZE 1024      // Start with 1KB
-#define MAX_SIZE 1024 * 64 // End up to 64KB
-#define STEP_SIZE 1024     // Step size if we want to list all size
+// #define MIN_SIZE 1024      // Start with 1KB
+// #define MAX_SIZE 1024 * 64 // End up to 64KB
+// #define STEP_SIZE 1024     // Step size if we want to list all size
 
 // This definition is to comparing L2 and L3 Cache
-// #define MIN_SIZE 1024 * 1024      // Start with 1 MB
-// #define MAX_SIZE 1024 * 1024 * 50 // End up to 50 MB
-// #define STEP_SIZE 1024 * 1024     // Step size if we want to list all size
+#define MIN_SIZE 1024 * 1024      // Start with 1 MB
+#define MAX_SIZE 1024 * 1024 * 50 // End up to 50 MB
+#define STEP_SIZE 1024 * 1024     // Step size if we want to list all size
 
 int main()
 {
