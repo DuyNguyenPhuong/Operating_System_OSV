@@ -11,9 +11,7 @@
 // Then we add a random number to each element
 void accessArray(int *array, int numElements, int random_increment)
 {
-    int numBlock = numElements / 1024;
-    int jump = 1024;
-    for (int i = 0; i < numBlock * jump; i += NUM_INT_IN_CACHE_LINE)
+    for (int i = 0; i < numElements; i += NUM_INT_IN_CACHE_LINE)
     {
         array[i] += random_increment;
     }
@@ -57,35 +55,23 @@ double measure_average_access_time(int *array, long long numElements, int random
     start.tv_sec = 0;
     end.tv_sec = 0;
 
-    // long long elapsedTime = 0;
-
     // Start the clock
-    // clock_gettime(CLOCK_MONOTONIC, &start);
-
     clock_gettime(CLOCK_MONOTONIC, &start);
 
     for (int trial = 0; trial < NUM_TRIALS; trial++)
     {
-        // clock_gettime(CLOCK_MONOTONIC, &start);
         accessArray(array, numElements, randomIncrementNumber);
-        // clock_gettime(CLOCK_MONOTONIC, &end);
-        // elapsedTime += (end.tv_sec - start.tv_sec) * ONE_BILLION + (end.tv_nsec - start.tv_nsec);
     }
-    clock_gettime(CLOCK_MONOTONIC, &end);
 
     // End the clock
-    // clock_gettime(CLOCK_MONOTONIC, &end);
+    clock_gettime(CLOCK_MONOTONIC, &end);
 
     // Calculate the elapsed time by nanosecond
     long long elapsedTime = (end.tv_sec - start.tv_sec) * ONE_BILLION + (end.tv_nsec - start.tv_nsec);
-    printf("Tong total Time in cache is %lld \n", elapsedTime);
 
     // Calculate the total access time
     long long totalAccessTime = NUM_TRIALS * numElements / NUM_INT_IN_CACHE_LINE;
 
-    printf("Tong total access TIme in cache is %lld \n", NUM_TRIALS * numElements / NUM_INT_IN_CACHE_LINE);
-
-    double averageAccessTime = (double)elapsedTime / (NUM_TRIALS * numElements / NUM_INT_IN_CACHE_LINE);
     return (double)elapsedTime / totalAccessTime;
 }
 
@@ -128,7 +114,7 @@ int malloc_and_randomly_initialize_array(int **array, long long size, long long 
     // Initialized the array
     for (int i = 0; i < numElements; i++)
     {
-        (*array)[i] = i * (randomInitializeNumber % 25) + 1;
+        (*array)[i] = i * (randomInitializeNumber % 15) + 1;
     }
 
     return EXIT_SUCCESS;
