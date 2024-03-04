@@ -67,3 +67,6 @@ trap cleanup EXIT
 
 rm -f tlb
 
+# To Run:
+# chmod +x run_all_tlb_tests.sh
+# ./run_all_tlb_tests.sh
